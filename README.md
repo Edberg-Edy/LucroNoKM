@@ -154,9 +154,12 @@ Valores consultados em outubro de 2026. Conferir sempre no Portal do Empreendedo
 - [x] Etapa 7: histórico semanal
 - [x] Etapa 8: editar, excluir e limite do MEI
 - [x] Etapa 9: fechamento mensal
-- [ ] Etapa 10: PWA, offline e deploy
+- [x] Etapa 10: PWA, offline e deploy
+- [x] Etapa 11: ajustes
+- [x] Etapa 12: robustez e testes no GitHub Actions
+- [x] Etapa 13: combustível, custos fixos, lembrete do DAS e sugestões de odômetro
 
-Detalhes de cada etapa em [docs/PASSO_A_PASSO.md](docs/PASSO_A_PASSO.md).
+Detalhes de cada etapa em [docs/referencia/PASSO_A_PASSO.md](docs/referencia/PASSO_A_PASSO.md).
 
 ## Fluxo de trabalho no Git
 
