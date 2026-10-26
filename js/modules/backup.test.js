@@ -43,6 +43,10 @@ const backupOk = () => ({
   },
   dias: [diaOk('a', '2026-10-02'), diaOk('b', '2026-10-01'), { id: 'c', data: '2026-10-03', aberto: true, odometroInicial: 5 }],
   meses: { '2026-09': { fechado: true, fechadoEm: { seconds: 3 }, checklist: { dasPago: true }, observacao: 'ok' } },
+  abastecimentos: [
+    { id: 'x1', data: '2026-10-02', odometro: 12540, litros: 3.9, valor: 23.4, cheio: true, criadoEm: { seconds: 4 } },
+    { id: 'x2', data: '2026-10-01', odometro: null, litros: 2, valor: 12, cheio: false },
+  ],
 });
 
 // Aplica uma alteração em uma cópia do backup e confere que ele passa a ser recusado
@@ -56,7 +60,7 @@ const recusa = (altera, mensagem) => {
 test('backup válido é aceito e resumido', () => {
   const r = validarBackup(backupOk());
   assert.equal(r.ok, true);
-  assert.deepEqual(r.resumo, { dias: 2, abertos: 1, meses: 1, de: '2026-10-01', ate: '2026-10-02' });
+  assert.deepEqual(r.resumo, { dias: 2, abertos: 1, meses: 1, abastecimentos: 2, de: '2026-10-01', ate: '2026-10-02' });
 });
 
 test('backup baixado antes, com o nome antigo do app, continua válido', () => {
@@ -65,9 +69,10 @@ test('backup baixado antes, com o nome antigo do app, continua válido', () => {
   assert.equal(validarBackup(b).ok, true);
 });
 
-test('backup antigo sem "meses" e sem "contasMes" continua válido', () => {
+test('backup antigo sem "meses", sem "abastecimentos" e sem "contasMes" continua válido', () => {
   const b = backupOk();
   delete b.meses;
+  delete b.abastecimentos;
   delete b.config.contasMes;
   assert.equal(validarBackup(b).ok, true);
 });
@@ -133,4 +138,32 @@ test('preparar a restauração ignora dia aberto e tira código e carimbos', () 
   assert.equal(p.dias[0].campos.data, '2026-10-02');
   assert.deepEqual(p.meses, [{ ym: '2026-09', campos: { fechado: true, checklist: { dasPago: true }, observacao: 'ok' } }]);
   assert.equal(p.config.meta, 150);
+});
+
+test('backup traz os abastecimentos em ordem de data (e continua funcionando sem eles)', () => {
+  const b = montarBackup({}, [], new Date(), {}, [{ data: '2026-10-08' }, { data: '2026-10-01' }]);
+  assert.deepEqual(b.abastecimentos.map((a) => a.data), ['2026-10-01', '2026-10-08']);
+  assert.deepEqual(montarBackup({}, []).abastecimentos, []);
+});
+
+test('abastecimentos inválidos no backup são recusados', () => {
+  recusa((b) => (b.abastecimentos = 'x'), 'não é lista');
+  recusa((b) => (b.abastecimentos[0].id = 'a/b'), 'código com barra');
+  recusa((b) => (b.abastecimentos[0].data = '02/10/2026'), 'data fora do padrão');
+  recusa((b) => (b.abastecimentos[0].litros = 0), 'litros zero');
+  recusa((b) => (b.abastecimentos[0].litros = '3,9'), 'litros como texto');
+  recusa((b) => (b.abastecimentos[0].valor = -1), 'valor negativo');
+  recusa((b) => (b.abastecimentos[0].odometro = 'x'), 'odômetro como texto');
+  recusa((b) => (b.abastecimentos[0].cheio = 'sim'), 'cheio como texto');
+});
+
+test('preparar a restauração leva os abastecimentos, sem código e sem carimbo de hora', () => {
+  const p = prepararRestauracao(backupOk());
+  assert.deepEqual(p.abastecimentos.map((a) => a.id), ['x1', 'x2']);
+  assert.equal('id' in p.abastecimentos[0].campos, false);
+  assert.equal('criadoEm' in p.abastecimentos[0].campos, false);
+  assert.equal(p.abastecimentos[0].campos.litros, 3.9);
+  const antigo = backupOk();
+  delete antigo.abastecimentos;
+  assert.deepEqual(prepararRestauracao(antigo).abastecimentos, []);
 });

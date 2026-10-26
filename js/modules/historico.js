@@ -1,11 +1,14 @@
 // Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI) e visão do mês (fechamento mensal).
 import { listarDiasFechados, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
+import { listarAbastecimentos, excluirAbastecimentoDoDia, idDoDia } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, usoDoLimite } from './mei.js';
 import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao } from './semana.js';
 import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from './mes.js';
-import { htmlMes } from './visaoMes.js';
+import { htmlMes, htmlCombustivelSemana } from './visaoMes.js';
+import { painelDoMes, combustivelDoPeriodo } from './combustivel.js';
+import { acertoDosFixos, totalFixos } from './fixos.js';
 import { htmlGraficoLucro, htmlGraficoGastos, maiorValor } from './graficos.js';
 import { htmlResultado } from './resultado.js';
 import { hojeISO, dataBR, dinheiro, esc } from './formatos.js';
@@ -21,12 +24,14 @@ export async function telaHistorico(caixa, usuario) {
   let config;
   let meses; // meses já gravados (fechamento e checklist), por 'aaaa-mm'
   let diaAberto; // dia que está aberto ou em edição (não entra nos totais até ser salvo), ou null
+  let abastecimentos; // abastecimentos de combustível (se não carregarem, o resto do histórico continua funcionando)
   try {
-    [dias, config, meses, diaAberto] = await Promise.all([
+    [dias, config, meses, diaAberto, abastecimentos] = await Promise.all([
       listarDiasFechados(usuario.uid),
       carregarConfig(usuario.uid),
       listarMeses(usuario.uid),
       buscarDiaAberto(usuario.uid),
+      listarAbastecimentos(usuario.uid).catch(() => []),
     ]);
   } catch (e) {
     caixa.innerHTML = `<section class="cartao"><h1>Histórico</h1>
@@ -67,24 +72,31 @@ export async function telaHistorico(caixa, usuario) {
     </div>`;
 
     if (modo === 'mes') {
+      const resumoAtual = resumoDoMes(dias, ym);
+      const terminou = mesJaTerminou(ym, hojeISO());
       caixa.innerHTML =
         avisoHtml +
         seletor +
         htmlMes({
           ym,
-          resumo: resumoDoMes(dias, ym),
+          resumo: resumoAtual,
           anterior: resumoDoMes(dias, somarMeses(ym, -1)),
           info: meses[ym],
-          terminou: mesJaTerminou(ym, hojeISO()),
+          terminou,
           atual: mesDe(hojeISO()),
           progresso: progressoDoMes({
             ym,
             hoje: hojeISO(),
-            lucro: resumoDoMes(dias, ym).totais.lucro,
+            lucro: resumoAtual.totais.lucro,
             contas: config.contasMes,
             diasPorMes: config.diasPorMes,
             hojeFechado: dias.some((d) => d.data === hojeISO()),
           }),
+          combustivel: painelDoMes(abastecimentos, ym, {
+            estimado: resumoAtual.totais.combustivel,
+            kmPorLitroAjuste: config.kmPorLitro,
+          }),
+          fixos: acertoDosFixos({ devido: totalFixos(config.fixos), descontado: resumoAtual.totais.fixos, terminou }),
         });
       return;
     }
@@ -93,6 +105,7 @@ export async function telaHistorico(caixa, usuario) {
     const semana = resumoDaSemana(dias, datas);
     const anterior = resumoDaSemana(dias, datasDaSemana(somarDias(inicio, -7)));
     const t = semana.totais;
+    const combustivel = combustivelDoPeriodo(dias.filter((d) => datas.includes(d.data)), abastecimentos, datas);
     const maximo = maiorValor(semana.porDia);
 
     const v = variacao(t.lucro, anterior.totais.lucro);
@@ -140,6 +153,7 @@ export async function telaHistorico(caixa, usuario) {
         <div><span>Média por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
         <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
       </section>
+      ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}
       ${
         t.diasTrabalhados
           ? `<p class="suave aviso">Separe ${dinheiro(t.guardar)} desta semana (manutenção e custos fixos). Os ${dinheiro(t.lucro)} restantes são o que você pode gastar.</p>`
@@ -245,6 +259,8 @@ export async function telaHistorico(caixa, usuario) {
     }
     try {
       await excluirDia(usuario.uid, id);
+      excluirAbastecimentoDoDia(usuario.uid, id).catch(() => {}); // o abastecimento informado nesse dia sai junto
+      abastecimentos = abastecimentos.filter((a) => a.id !== idDoDia(id));
       dias = dias.filter((d) => d.id !== id);
       aviso = 'Dia excluído.';
       selecionado = null;

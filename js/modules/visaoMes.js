@@ -2,6 +2,7 @@
 import { dataBR, dinheiro, esc } from './formatos.js';
 import { nomeDoMes } from './mes.js';
 import { variacao } from './semana.js';
+import { kmL, litrosBR, dinheiro3 } from './combustivel.js';
 
 const linha = (rotulo, valor, destaque = '') =>
   `<div class="resumo ${destaque}"><span>${rotulo}</span><b>${valor}</b></div>`;
@@ -43,7 +44,83 @@ function htmlProgresso(p, media) {
     </section>`;
 }
 
-export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso }) {
+// Card de combustível da semana (resultado de combustivelDoPeriodo). Mesmo estilo dos indicadores.
+export function htmlCombustivelSemana(c) {
+  const real = c.real;
+  return `
+      <section class="cartao indicadores">
+        <div><span>Combustível usado (estimado)</span><b>${dinheiro(c.estimadoValor)}</b></div>
+        <div><span>Litros usados (estimado)</span><b>${litrosBR(c.estimadoLitros)} L</b></div>
+        <div><span>Combustível por km</span><b>${c.porKm === null ? '—' : dinheiro3(c.porKm)}</b></div>
+        <div><span>Km por litro nas contas</span><b>${c.kmPorLitroUsado === null ? '—' : kmL(c.kmPorLitroUsado)}</b></div>
+        ${
+          real
+            ? `<div><span>Pago nos abastecimentos</span><b>${dinheiro(real.valor)}</b></div>
+        <div><span>Litros abastecidos</span><b>${litrosBR(real.litros)} L</b></div>
+        <div><span>Preço médio do litro</span><b>${real.precoMedio === null ? '—' : dinheiro(real.precoMedio)}</b></div>
+        <div><span>Consumo medido</span><b>${real.kmPorLitro === null ? '—' : kmL(real.kmPorLitro) + ' km/l'}</b></div>`
+            : ''
+        }
+      </section>`;
+}
+
+// combustivel = resultado de painelDoMes (gasto real com abastecimentos contra o estimado pelos dias)
+function htmlCombustivel(c) {
+  if (c.abastecimentos === 0) {
+    return `
+    <section class="cartao">
+      <h2>Combustível</h2>
+      <p class="suave">Nenhum abastecimento lançado neste mês. Informe os litros e o valor ao fechar o dia (campos "Abasteci hoje") para comparar o gasto real com o estimado.</p>
+    </section>`;
+  }
+
+  const mais = c.diferenca >= 0;
+  let dica = '';
+  if (c.desvio !== null && Math.abs(c.desvio) >= 0.05) {
+    const pontos = Math.round(Math.abs(c.desvio) * 100);
+    dica =
+      `O consumo medido está ${pontos}% ${c.desvio < 0 ? 'abaixo' : 'acima'} do km/l dos Ajustes (${kmL(c.kmPorLitroAjuste)}). ` +
+      'Em Ajustes, o botão do consumo medido corrige o km/l para os dias novos. ';
+  }
+
+  return `
+    <section class="cartao">
+      <h2>Combustível</h2>
+      ${linha('Pago nos abastecimentos', dinheiro(c.valor), 'total')}
+      ${linha('Estimado pelos dias fechados', dinheiro(c.estimado))}
+      ${linha(mais ? 'Gastou a mais que o estimado' : 'Gastou a menos que o estimado', dinheiro(Math.abs(c.diferenca)))}
+      ${linha('Litros abastecidos', litrosBR(c.litros) + ' L')}
+      ${linha('Preço médio do litro', c.precoMedio === null ? '—' : dinheiro(c.precoMedio))}
+      ${linha('Consumo medido', c.kmPorLitro === null ? '—' : kmL(c.kmPorLitro) + ' km/l')}
+      ${linha('Custo real por km', c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm))}
+      <p class="suave">${dica}O gasto soma o que foi pago no mês: o abastecimento dos últimos dias pode ser para os primeiros dias do mês seguinte. O consumo só aparece com dois abastecimentos de tanque cheio.</p>
+    </section>`;
+}
+
+// f = resultado de acertoDosFixos; lucro = lucro líquido do mês
+function htmlFixos(f, lucro) {
+  let texto;
+  if (f.situacao === 'andamento') {
+    texto = `Descontados até agora ${dinheiro(f.descontado)} dos ${dinheiro(f.devido)} devidos no mês (cada dia trabalhado desconta uma parte).`;
+  } else if (f.situacao === 'falta') {
+    texto =
+      `Você trabalhou menos dias do que o previsto nos Ajustes, então ficaram ${dinheiro(f.diferenca)} de custos fixos sem desconto. ` +
+      `Separe esse valor também (DAS e internet são cobrados inteiros). O lucro real do mês é ${dinheiro(lucro - f.diferenca)}.`;
+  } else if (f.situacao === 'sobra') {
+    texto = `Foram descontados ${dinheiro(-f.diferenca)} a mais que o devido (mais dias que o previsto). O lucro real do mês é ${dinheiro(lucro - f.diferenca)}.`;
+  } else {
+    texto = 'Os custos fixos do mês foram todos descontados pelos dias trabalhados.';
+  }
+  return `
+    <section class="cartao">
+      <h2>Custos fixos do mês</h2>
+      ${linha('Devido no mês (Ajustes)', dinheiro(f.devido))}
+      ${linha('Descontado nos dias', dinheiro(f.descontado))}
+      <p class="suave">${texto}</p>
+    </section>`;
+}
+
+export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso, combustivel, fixos }) {
   const t = resumo.totais;
   const fechado = info?.fechado === true;
   const marcas = info?.checklist || {};
@@ -98,6 +175,8 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       }
     </section>
 
+    ${temDias && fixos ? htmlFixos(fixos, t.lucro) : ''}
+
     ${htmlProgresso(progresso, t.mediaPorDia)}
     </div>
 
@@ -113,6 +192,8 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       <div><span>Melhor dia</span><b>${destaque(resumo.melhor)}</b></div>
       ${t.diasTrabalhados > 1 ? `<div><span>Pior dia</span><b>${destaque(resumo.pior)}</b></div>` : ''}
     </section>
+
+    ${combustivel ? htmlCombustivel(combustivel) : ''}
 
     ${
       resumo.plataformas.length

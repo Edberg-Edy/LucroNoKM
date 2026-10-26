@@ -1,21 +1,39 @@
 // Service worker do LucroNoKM: guarda o app no aparelho para abrir sem internet.
-// Os DADOS (dias, ajustes) não passam por aqui: o próprio Firestore guarda offline.
+// Os DADOS (dias, ajustes, abastecimentos) não passam por aqui: o próprio Firestore guarda offline.
 // Ao mudar qualquer arquivo do app, aumente o número da VERSAO para o celular baixar a versão nova.
-const VERSAO = 'lucronokm-v6';
+// O teste sw.test.js confere se todo arquivo do app está na lista abaixo (esquecer um deixa o app sem offline).
+const VERSAO = 'lucronokm-v9';
 
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/config/firebase-config.js', './js/config/padroes.js',
   './js/services/firebase.js', './js/services/dados.js', './js/services/dias.js', './js/services/meses.js',
+  './js/services/abastecimentos.js',
   './js/modules/login.js', './js/modules/ajustes.js', './js/modules/calculos.js', './js/modules/formatos.js',
   './js/modules/hoje.js', './js/modules/resultado.js', './js/modules/semana.js', './js/modules/graficos.js',
   './js/modules/historico.js', './js/modules/mei.js', './js/modules/backup.js',
   './js/modules/mes.js', './js/modules/visaoMes.js', './js/modules/gravacao.js',
+  './js/modules/combustivel.js', './js/modules/fixos.js',
+  './js/modules/lembretes.js', './js/modules/sugestoes.js', './js/modules/validacao.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
 ];
 
+// Baixa cada arquivo direto da internet ("reload"), sem passar pelo cache do navegador.
+// Sem isso, o GitHub Pages pode entregar uma cópia velha (ele manda os arquivos com cache de alguns minutos)
+// e a versão nova do app ficaria guardada com arquivos antigos.
+async function guardarTudo() {
+  const cache = await caches.open(VERSAO);
+  await Promise.all(
+    ARQUIVOS.map(async (arquivo) => {
+      const resposta = await fetch(new Request(arquivo, { cache: 'reload' }));
+      if (!resposta.ok) throw new Error(`${arquivo}: erro ${resposta.status}`); // instalação falha e o app antigo continua valendo
+      await cache.put(arquivo, resposta);
+    })
+  );
+}
+
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(guardarTudo().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
