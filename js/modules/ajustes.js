@@ -2,12 +2,15 @@
 // Cada alteração é salva sozinha no Firestore (não existe botão "Salvar").
 import { carregarConfig, salvarConfig } from '../services/dados.js';
 import { listarTodosDias, listarDiasFechados, atualizarDiasEmLote, restaurarDias } from '../services/dias.js';
+import { listarAbastecimentos, restaurarAbastecimentos } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes } from '../services/meses.js';
 import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcularDiaFechado } from './calculos.js';
 import { mesDe } from './mes.js';
 import { montarBackup, baixarBackup, validarBackup, prepararRestauracao } from './backup.js';
+import { trechos, consumoMedio, kmL } from './combustivel.js';
+import { validarCampoAjuste } from './validacao.js';
 import { padroes } from '../config/padroes.js';
-import { dinheiro, esc, numero } from './formatos.js';
+import { dinheiro, esc } from './formatos.js';
 
 const dinheiro3 = (n) =>
   'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
@@ -38,6 +41,9 @@ export async function telaAjustes(caixa, usuario) {
   let status = '';
   let pendenteRecalculo = null; // depois do 1º toque em "Recalcular": { alvos, travados } aguardando o 2º toque
   let pendenteRestauro = null; // depois de escolher o arquivo de backup: lista pronta aguardando a confirmação
+  let consumo = null; // consumo real medido pelos abastecimentos (ou null enquanto não dá para medir)
+  let consumoPronto = false; // true quando a leitura dos abastecimentos terminou
+  let consumoErro = false; // true se não foi possível ler os abastecimentos
 
   function mostrarStatus(texto) {
     status = texto;
@@ -53,6 +59,64 @@ export async function telaAjustes(caixa, usuario) {
     } catch (e) {
       mostrarStatus('Não foi possível salvar. Tente de novo.');
     }
+  }
+
+  // Lê os abastecimentos e mede o consumo real. Roda em segundo plano: os Ajustes aparecem sem esperar.
+  function carregarConsumo() {
+    consumoPronto = false;
+    consumoErro = false;
+    listarAbastecimentos(usuario.uid)
+      .then((lista) => {
+        consumo = consumoMedio(trechos(lista));
+      })
+      .catch(() => {
+        consumoErro = true;
+      })
+      .finally(() => {
+        consumoPronto = true;
+        atualizarConsumo();
+      });
+  }
+
+  // Mostra o consumo real medido e, se for diferente do ajuste, o botão para usar o valor medido.
+  function atualizarConsumo() {
+    const texto = caixa.querySelector('#consumoReal');
+    const botao = caixa.querySelector('[data-acao="usarConsumo"]');
+    if (!texto || !botao) return;
+    botao.style.display = 'none';
+
+    if (!consumoPronto) texto.textContent = 'Calculando…';
+    else if (consumoErro) texto.textContent = 'Não foi possível ler os abastecimentos. Confira a internet.';
+    else if (!consumo) {
+      texto.textContent =
+        'Ainda não dá para medir. Informe os litros e o valor ("Abasteci hoje") ao fechar o dia em dois dias com abastecimento, e o app calcula o km/l real da sua moto.';
+    } else {
+      const real = Math.round(consumo.kmPorLitro * 10) / 10;
+      const atual = config.kmPorLitro;
+      let frase =
+        `Medido: ${kmL(real)} km/l (média dos últimos ${consumo.trechos} ${consumo.trechos === 1 ? 'trecho' : 'trechos'}, ${Math.round(consumo.km)} km, de tanque cheio a tanque cheio). ` +
+        `Nos Ajustes: ${kmL(atual)} km/l.`;
+      if (Math.abs(real - atual) < 0.05) {
+        frase += ' Está igual ao medido. Para refazer as contas dos dias já fechados com esse valor, use "Recalcular dias fechados".';
+      } else {
+        const pontos = Math.max(1, Math.round(Math.abs(real / atual - 1) * 100));
+        frase +=
+          real < atual
+            ? ` O ajuste está ${pontos}% acima do real: o combustível dos dias está sendo subestimado e o lucro aparece maior que o verdadeiro.`
+            : ` O ajuste está ${pontos}% abaixo do real: o combustível dos dias está sendo superestimado.`;
+        botao.textContent = `Usar ${kmL(real)} km/l`;
+        botao.style.display = '';
+      }
+      texto.textContent = frase;
+    }
+  }
+
+  // Passa o km/l medido para os Ajustes (vale para os dias novos; os já fechados não mudam sozinhos).
+  function usarConsumo() {
+    if (!consumo) return;
+    config.kmPorLitro = Math.round(consumo.kmPorLitro * 10) / 10;
+    desenhar();
+    salvar();
   }
 
   // Atualiza só os números calculados, sem redesenhar a tela (assim o teclado não fecha).
@@ -88,6 +152,12 @@ export async function telaAjustes(caixa, usuario) {
               `<label>${rotulo}<input type="text" inputmode="decimal" data-num data-k="${chave}" value="${config[chave]}"></label>`
           )
           .join('')}
+      </section>
+
+      <section class="cartao">
+        <h2>Consumo real da moto</h2>
+        <p class="suave" id="consumoReal" role="status">Calculando…</p>
+        <button type="button" class="botao secundario" data-acao="usarConsumo" style="display:none">Usar o consumo medido</button>
       </section>
 
       <section class="cartao">
@@ -156,7 +226,7 @@ export async function telaAjustes(caixa, usuario) {
 
       <section class="cartao">
         <h2>Backup</h2>
-        <p class="suave">Baixa um arquivo com os seus ajustes e todos os seus dias. Guarde em um lugar seguro de vez em quando.</p>
+        <p class="suave">Baixa um arquivo com os seus ajustes, todos os seus dias e os abastecimentos. Guarde em um lugar seguro de vez em quando.</p>
         <button type="button" class="botao secundario" data-acao="backup">Baixar backup (.json)</button>
         <p class="suave" id="statusBackup" role="status"></p>
         <h2 style="margin-top:16px">Restaurar um backup</h2>
@@ -168,15 +238,20 @@ export async function telaAjustes(caixa, usuario) {
       </div>
       </div>`;
     atualizarResumos();
+    atualizarConsumo();
   }
 
   async function fazerBackup() {
     const aviso = caixa.querySelector('#statusBackup');
     aviso.textContent = 'Gerando backup…';
     try {
-      const [dias, meses] = await Promise.all([listarTodosDias(usuario.uid), listarMeses(usuario.uid)]);
-      baixarBackup(montarBackup(config, dias, new Date(), meses));
-      aviso.textContent = `Backup baixado (${dias.length} dias e ${Object.keys(meses).length} meses).`;
+      const [dias, meses, abastecimentos] = await Promise.all([
+        listarTodosDias(usuario.uid),
+        listarMeses(usuario.uid),
+        listarAbastecimentos(usuario.uid),
+      ]);
+      baixarBackup(montarBackup(config, dias, new Date(), meses, abastecimentos));
+      aviso.textContent = `Backup baixado (${dias.length} dias, ${Object.keys(meses).length} meses e ${abastecimentos.length} abastecimentos).`;
     } catch (e) {
       aviso.textContent = 'Não foi possível gerar o backup. Confira a internet e tente de novo.';
     }
@@ -268,7 +343,7 @@ export async function telaAjustes(caixa, usuario) {
     botao.textContent = `Confirmar restauração (${r.dias} dias)`;
     aviso.textContent =
       `Backup válido: ${r.dias} dias` + (r.de ? ` (de ${r.de.split('-').reverse().join('/')} a ${r.ate.split('-').reverse().join('/')})` : '') +
-      `, ${r.meses} meses` + (r.abertos ? `, ${r.abertos} dia aberto ignorado` : '') +
+      `, ${r.meses} meses, ${r.abastecimentos} abastecimentos` + (r.abertos ? `, ${r.abertos} dia aberto ignorado` : '') +
       '. Toque no botão para restaurar, ou escolha outro arquivo.';
     setTimeout(() => {
       if (pendenteRestauro) {
@@ -298,12 +373,14 @@ export async function telaAjustes(caixa, usuario) {
       Object.assign(config, padroes(), preparado.config); // valores novos que o backup não tinha ficam com o padrão
       const gravacoes = [await salvarConfig(usuario.uid, config), await restaurarDias(usuario.uid, preparado.dias)];
       for (const m of preparado.meses) gravacoes.push(await salvarMes(usuario.uid, m.ym, m.campos));
+      gravacoes.push(await restaurarAbastecimentos(usuario.uid, preparado.abastecimentos));
 
       const tudo = gravacoes.every((g) => g.sincronizado);
       desenhar(); // mostra os ajustes restaurados
+      carregarConsumo(); // os abastecimentos restaurados mudam o consumo medido
       const novo = caixa.querySelector('#statusRestaurar');
       novo.textContent =
-        `Pronto: ${preparado.dias.length} dias e ${preparado.meses.length} meses restaurados.` +
+        `Pronto: ${preparado.dias.length} dias, ${preparado.meses.length} meses e ${preparado.abastecimentos.length} abastecimentos restaurados.` +
         (tudo ? '' : ' Sem sinal agora: vai sincronizar quando a internet voltar.');
     } catch (e) {
       aviso.textContent = 'Não foi possível restaurar. Confira a internet e tente de novo.';
@@ -320,13 +397,23 @@ export async function telaAjustes(caixa, usuario) {
     if (!campo) return;
 
     const caminho = campo.dataset.k.split('.'); // ex.: "manutencao.2.preco" vira ['manutencao', '2', 'preco']
-    let valor = campo.hasAttribute('data-num') ? numero(campo.value) : campo.value.trim();
-
-    if (valor === '') { // nome vazio não vale: volta ao valor anterior
-      desenhar();
-      return;
+    let valor;
+    if (campo.hasAttribute('data-num')) {
+      // Número inválido, vazio onde não pode ou fora do normal: avisa e volta ao valor anterior (nada é salvo)
+      const conferido = validarCampoAjuste(campo.dataset.k, campo.value);
+      if (!conferido.ok) {
+        mostrarStatus(conferido.erro);
+        desenhar();
+        return;
+      }
+      valor = conferido.valor;
+    } else {
+      valor = campo.value.trim();
+      if (valor === '') { // nome vazio não vale: volta ao valor anterior
+        desenhar();
+        return;
+      }
     }
-    if (campo.dataset.k === 'diasPorMes') valor = Math.max(1, Math.round(valor));
 
     let alvo = config;
     for (let i = 0; i < caminho.length - 1; i++) alvo = alvo[caminho[i]];
@@ -344,6 +431,10 @@ export async function telaAjustes(caixa, usuario) {
 
     if (botao.dataset.acao === 'backup') {
       fazerBackup();
+      return;
+    }
+    if (botao.dataset.acao === 'usarConsumo') {
+      usarConsumo();
       return;
     }
     if (botao.dataset.acao === 'recalcular') {
@@ -370,4 +461,5 @@ export async function telaAjustes(caixa, usuario) {
   });
 
   desenhar();
+  carregarConsumo();
 }

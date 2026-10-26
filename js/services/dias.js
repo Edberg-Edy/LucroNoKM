@@ -10,6 +10,7 @@ import {
   deleteDoc,
   query,
   where,
+  orderBy,
   limit,
   serverTimestamp,
   writeBatch,
@@ -59,6 +60,21 @@ export async function listarDiasFechados(uid) {
   return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() }));
 }
 
+// Os "n" dias mais recentes (abertos ou fechados), do mais novo para o mais antigo.
+// Lê só "n" documentos: serve para sugerir o odômetro sem ler o histórico inteiro.
+export async function ultimosDias(uid, n) {
+  const resultado = await getDocs(query(colecao(uid), orderBy('data', 'desc'), limit(n)));
+  return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() }));
+}
+
+// O dia mais antigo já lançado (ou null). Usado para saber desde quando o app é usado.
+export async function primeiroDia(uid) {
+  const resultado = await getDocs(query(colecao(uid), orderBy('data', 'asc'), limit(1)));
+  if (resultado.empty) return null;
+  const achado = resultado.docs[0];
+  return { id: achado.id, ...achado.data() };
+}
+
 // Lê todos os dias (abertos e fechados). Usado no backup.
 export async function listarTodosDias(uid) {
   const resultado = await getDocs(colecao(uid));
@@ -70,7 +86,7 @@ export const reabrirDia = (uid, id) => gravar(updateDoc(refDia(uid, id), { abert
 
 // Grava vários dias de uma vez. O Firestore aceita até 500 gravações por lote; aqui usamos 400 por segurança.
 // Devolve { sincronizado }: true só se todos os lotes foram confirmados pelo servidor a tempo.
-async function emLotes(lista, aplicar) {
+export async function emLotes(lista, aplicar) {
   let sincronizado = true;
   for (let i = 0; i < lista.length; i += 400) {
     const lote = writeBatch(db);

@@ -1,33 +1,58 @@
 // Aba Hoje. Abrir o dia (data + odômetro), lançar despesas e fechar o dia com o resultado.
 // Também serve para editar um dia já fechado (o Histórico reabre o dia e manda para cá).
-import { buscarDiaAberto, criarDia, atualizarDia, excluirDia, fecharDia, listarDiasFechados } from '../services/dias.js';
+import { buscarDiaAberto, criarDia, atualizarDia, excluirDia, fecharDia, listarDiasFechados, ultimosDias, primeiroDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
-import { mesEstaFechado } from '../services/meses.js';
+import { mesEstaFechado, listarMeses } from '../services/meses.js';
 import { calcularDia, parametrosDoDia, lerHoras } from './calculos.js';
 import { htmlResultado } from './resultado.js';
+import { lerAbastecimento, salvarAbastecimentoDoDia, excluirAbastecimentoDoDia } from '../services/abastecimentos.js';
+import { validarAbastecimento } from './combustivel.js';
+import { odometroSugerido, conferirOdometroInicial } from './sugestoes.js';
+import { lembreteDAS } from './lembretes.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
 
 const categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros'];
 const KM_ALERTA = 400; // acima disso o app pergunta se o odômetro está certo (pega erro de digitação)
 
-// "caixa" é o espaço da tela onde a aba aparece; "usuario" é quem está logado.
-export async function telaHoje(caixa, usuario) {
+// "raiz" é o espaço da tela onde a aba aparece; "usuario" é quem está logado.
+// A aba tem duas partes: avisos (DAS) e o dia (abrir, despesas, fechar). O abastecimento é informado ao fechar o dia.
+export async function telaHoje(raiz, usuario) {
+  raiz.innerHTML = '<div id="hojeAvisos"></div><div id="hojeDia"></div>';
+  const caixa = raiz.querySelector('#hojeDia');
   caixa.innerHTML = '<p class="suave">Carregando…</p>';
 
   let dia; // dia aberto (ou null)
   let config; // ajustes: precisamos das plataformas e dos parâmetros para fechar o dia
+  let recentes; // os últimos dias lançados: servem para sugerir e conferir o odômetro
+  let meses; // meses já gravados (para o lembrete do DAS)
+  let primeiro; // o dia mais antigo já lançado (para o lembrete do DAS)
   try {
-    [dia, config] = await Promise.all([buscarDiaAberto(usuario.uid), carregarConfig(usuario.uid)]);
+    // As três últimas consultas são ajudas: se falharem (sem sinal, por exemplo), o app segue sem elas.
+    [dia, config, recentes, meses, primeiro] = await Promise.all([
+      buscarDiaAberto(usuario.uid),
+      carregarConfig(usuario.uid),
+      ultimosDias(usuario.uid, 5).catch(() => []),
+      listarMeses(usuario.uid).catch(() => ({})),
+      primeiroDia(usuario.uid).catch(() => null),
+    ]);
   } catch (e) {
     caixa.innerHTML = `<section class="cartao"><h1>Hoje</h1>
       <p class="erro">Não foi possível carregar o dia (${esc(e.code || 'erro')}). Confira a internet.</p></section>`;
     return;
   }
 
+  // Ao editar um dia, o abastecimento que foi informado nele volta preenchido (litros e valor).
+  let abastecimentoDoDia = null;
+  if (dia && dia.odometroFinal !== undefined) abastecimentoDoDia = await lerAbastecimento(usuario.uid, 'dia-' + dia.id).catch(() => null);
+
+  const lembrete = lembreteDAS({ hoje: hojeISO(), meses, primeiroDia: primeiro ? primeiro.data : null });
+  if (lembrete) raiz.querySelector('#hojeAvisos').innerHTML = `<p class="aviso-topo" role="status">${esc(lembrete)}</p>`;
+
   let categoria = categorias[0]; // categoria de despesa selecionada
   let confirmarDescarte = false; // true depois do primeiro toque em "Descartar este dia"
   let confirmarDataRepetida = null; // data que o usuário já confirmou manter, mesmo com outro dia nela
   let confirmarKm = null; // odômetro final que o usuário já confirmou, mesmo com km muito alto
+  let confirmarOdometroInicial = null; // odômetro inicial que o usuário já confirmou, mesmo com salto grande
   let resultado = null; // dia recém-fechado, mostrado até o usuário tocar em "Lançar outro dia"
   // Um dia que já tem odômetro final foi fechado antes: estamos editando.
   const emEdicao = () => dia && dia.odometroFinal !== undefined;
@@ -43,7 +68,13 @@ export async function telaHoje(caixa, usuario) {
 
   // Ao editar, os campos do fechamento já vêm preenchidos com o que foi salvo.
   function rascunhoDoDia() {
-    const r = { data: dia.data, odometroFinal: String(dia.odometroFinal), horas: dia.horas ? String(dia.horas).replace('.', ',') : '' };
+    const r = {
+      data: dia.data,
+      odometroFinal: String(dia.odometroFinal),
+      horas: dia.horas ? String(dia.horas).replace('.', ',') : '',
+      abLitros: abastecimentoDoDia ? String(abastecimentoDoDia.litros).replace('.', ',') : '',
+      abValor: abastecimentoDoDia ? String(abastecimentoDoDia.valor).replace('.', ',') : '',
+    };
     nomesPlataformas().forEach((nome, i) => {
       const p = dia.plataformas.find((x) => x.nome === nome);
       r['v' + i] = p && p.valor ? String(p.valor).replace('.', ',') : '';
@@ -97,6 +128,7 @@ export async function telaHoje(caixa, usuario) {
   }
 
   function desenharAbrir() {
+    const sugerido = odometroSugerido({ dias: recentes }); // onde o último dia terminou
     caixa.innerHTML = `
       <section class="cartao estreito">
         <h1>Abrir o dia</h1>
@@ -104,8 +136,9 @@ export async function telaHoje(caixa, usuario) {
           <input type="date" id="data" value="${hojeISO()}" max="${hojeISO()}">
         </label>
         <label>Odômetro no início (km)
-          <input type="text" inputmode="decimal" id="odometro" placeholder="Ex.: 12450">
+          <input type="text" inputmode="decimal" id="odometro" placeholder="Ex.: 12450" value="${sugerido ?? ''}">
         </label>
+        ${sugerido !== null ? `<p class="suave">Sugerido: onde o último dia terminou. Confira com o painel da moto.</p>` : ''}
         <p class="erro" id="erro" role="alert"></p>
         <button type="button" class="botao" data-acao="abrir">Abrir o dia</button>
         <p class="suave" style="margin-top:12px">Esqueceu de lançar um dia? Troque a data acima.</p>
@@ -190,6 +223,13 @@ export async function telaHoje(caixa, usuario) {
           </div>`
           )
           .join('')}
+        <label>Abasteci hoje: litros (opcional)
+          <input type="text" inputmode="decimal" data-f="abLitros" placeholder="Ex.: 5,6" value="${r('abLitros')}">
+        </label>
+        <label>Abasteci hoje: valor pago em R$ (opcional)
+          <input type="text" inputmode="decimal" data-f="abValor" placeholder="Ex.: 33,60" value="${r('abValor')}">
+        </label>
+        <p class="suave">Encha sempre até a bomba desarmar. Nos dias sem abastecimento, deixe em branco.</p>
         <p class="erro" id="erroFechar" role="alert"></p>
         <button type="button" class="botao" data-acao="fechar">${emEdicao() ? 'Salvar alterações' : 'Fechar o dia'}</button>
       </section>
@@ -225,6 +265,16 @@ export async function telaHoje(caixa, usuario) {
     if (!data || data > hojeISO()) return mostrarErro('Escolha uma data válida (hoje ou anterior).');
     if (odometro === null) return mostrarErro('Digite o odômetro inicial.');
 
+    // Confere com os dias já lançados (pega erro de digitação). Salto grande só pede confirmação.
+    const conferencia = conferirOdometroInicial({ data, odometro, dias: recentes });
+    if (conferencia) {
+      if (conferencia.tipo === 'erro') return mostrarErro(conferencia.texto);
+      if (confirmarOdometroInicial !== odometro) {
+        confirmarOdometroInicial = odometro;
+        return mostrarErro(conferencia.texto);
+      }
+    }
+
     // Mês fechado não aceita dias novos (reabra o mês no Histórico)
     try {
       if (await mesEstaFechado(usuario.uid, data.slice(0, 7))) {
@@ -236,6 +286,7 @@ export async function telaHoje(caixa, usuario) {
 
     try {
       dia = await criarDia(usuario.uid, { data, odometroInicial: odometro });
+      confirmarOdometroInicial = null;
       desenhar();
     } catch (e) {
       mostrarErro('Não foi possível abrir o dia. Confira a internet e tente de novo.');
@@ -287,6 +338,18 @@ export async function telaHoje(caixa, usuario) {
       }
     }
 
+    // Abastecimento do dia (opcional): usa o odômetro final do dia e conta como tanque cheio.
+    let abastecimento = null;
+    if ((rascunho.abLitros || '').trim() || (rascunho.abValor || '').trim()) {
+      const conferido = validarAbastecimento(
+        { data, odometro: String(odometroFinal), litros: rascunho.abLitros, valor: rascunho.abValor, cheio: true },
+        [],
+        { hoje: hojeISO() }
+      );
+      if (!conferido.ok) return erro(conferido.erro);
+      abastecimento = conferido.dados;
+    }
+
     // Só entram as plataformas em que houve ganho ou corridas
     const plataformas = nomesPlataformas()
       .map((nome, i) => ({
@@ -304,10 +367,15 @@ export async function telaHoje(caixa, usuario) {
     );
 
     try {
+      // O abastecimento é gravado antes do fechamento: se algo falhar, o dia continua aberto e dá para tentar de novo.
+      if (abastecimento) await salvarAbastecimentoDoDia(usuario.uid, dia.id, abastecimento);
+      else if (abastecimentoDoDia) await excluirAbastecimentoDoDia(usuario.uid, dia.id);
+      abastecimentoDoDia = abastecimento;
       const gravado = await fecharDia(usuario.uid, dia.id, { data, odometroFinal, horas, plataformas, snapshot: parametros, calculados });
       confirmarDataRepetida = null;
       confirmarKm = null;
       apagarRascunho();
+      recentes = [{ id: dia.id, data, odometroInicial: dia.odometroInicial, odometroFinal }, ...recentes.filter((d) => d.id !== dia.id)].slice(0, 5);
       resultado = { ...dia, pendente: !gravado.sincronizado, data, aberto: false, odometroFinal, horas, plataformas, snapshot: parametros, calculados };
       dia = null;
       rascunho = {};

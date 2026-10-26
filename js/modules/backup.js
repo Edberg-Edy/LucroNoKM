@@ -24,7 +24,8 @@ const numerosEm = (o, campos) => campos.every((c) => numero(o[c]));
 const idValido = (id) => texto(id) && id !== '' && id.length <= 200 && !id.includes('/') && id !== '.' && id !== '..' && !/^__.*__$/.test(id);
 
 // Monta o conteúdo do backup. Os dias saem em ordem de data. "meses" são os fechamentos e checklists (opcional).
-export function montarBackup(config, dias, agora = new Date(), meses = {}) {
+// "abastecimentos" é a lista de abastecimentos de combustível (opcional; backups antigos não têm).
+export function montarBackup(config, dias, agora = new Date(), meses = {}, abastecimentos = []) {
   return {
     app: NOME_APP,
     versao: 1,
@@ -32,6 +33,7 @@ export function montarBackup(config, dias, agora = new Date(), meses = {}) {
     config,
     dias: [...dias].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)),
     meses,
+    abastecimentos: [...abastecimentos].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)),
   };
 }
 
@@ -91,6 +93,16 @@ function erroNoDia(d) {
   return null;
 }
 
+// Valida um abastecimento. Devolve uma frase de erro, ou null se estiver tudo certo.
+function erroNoAbastecimento(a) {
+  if (!objeto(a) || !idValido(a.id)) return 'Há um abastecimento sem identificação válida no backup.';
+  if (!texto(a.data) || !DATA.test(a.data)) return `Abastecimento com data inválida no backup (${a.id}).`;
+  if (!numero(a.litros) || a.litros <= 0 || !numero(a.valor) || a.valor < 0) return `Abastecimento de ${a.data} com litros ou valor inválidos.`;
+  if (a.odometro !== undefined && !nuloOuNumero(a.odometro)) return `Abastecimento de ${a.data} com odômetro inválido.`;
+  if (a.cheio !== undefined && typeof a.cheio !== 'boolean') return `Abastecimento de ${a.data} com "tanque cheio" inválido.`;
+  return null;
+}
+
 // Confere se o arquivo escolhido é mesmo um backup do LucroNoKM e se está inteiro.
 // Devolve { ok: true, resumo } ou { ok: false, erro } com uma frase pronta para mostrar na tela.
 export function validarBackup(b) {
@@ -105,6 +117,14 @@ export function validarBackup(b) {
   for (const d of b.dias) {
     const erroDia = erroNoDia(d);
     if (erroDia) return falha(erroDia);
+  }
+
+  if (b.abastecimentos !== undefined) {
+    if (!Array.isArray(b.abastecimentos)) return falha('A lista de abastecimentos do backup está inválida.');
+    for (const a of b.abastecimentos) {
+      const erroAbastecimento = erroNoAbastecimento(a);
+      if (erroAbastecimento) return falha(erroAbastecimento);
+    }
   }
 
   const meses = b.meses ?? {};
@@ -125,6 +145,7 @@ export function validarBackup(b) {
       dias: datas.length,
       abertos: b.dias.length - datas.length,
       meses: Object.keys(meses).length,
+      abastecimentos: (b.abastecimentos ?? []).length,
       de: datas[0] || null,
       ate: datas[datas.length - 1] || null,
     },
@@ -141,5 +162,6 @@ export function prepararRestauracao(b) {
     config: b.config,
     dias: b.dias.filter((d) => d.aberto !== true).map((d) => ({ id: d.id, campos: limpar(d) })),
     meses: Object.entries(b.meses ?? {}).map(([ym, campos]) => ({ ym, campos: limpar(campos) })),
+    abastecimentos: (b.abastecimentos ?? []).map((a) => ({ id: a.id, campos: limpar(a) })),
   };
 }
