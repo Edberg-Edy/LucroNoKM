@@ -1,6 +1,6 @@
 # LucroNoKM: status do projeto
 
-Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [docs/SPEC.md](docs/SPEC.md).
+Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [docs/referencia/SPEC.md](docs/referencia/SPEC.md).
 
 ## Fluxo de trabalho
 
@@ -21,8 +21,11 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 6 | Fechar o dia e resultado | ✅ v0.6 |
 | 7 | Histórico semanal | ✅ v0.7 |
 | 8 | Editar, excluir, limite do MEI e backup | ✅ v0.8 |
-| 9 | Fechamento mensal | 🚧 em teste |
-| 10 | PWA, offline e deploy | ⏳ |
+| 9 | Fechamento mensal | ✅ |
+| 10 | PWA, offline e deploy (Firebase Hosting) | ✅ |
+| 11 | Ajustes (branch etapa-11-ajustes) | ✅ |
+| 12 | Robustez: números com ponto de milhar, backup mais rigoroso, testes no GitHub Actions | ✅ v0.12 |
+| 13 | Combustível (abastecimentos e consumo), custos fixos, lembrete do DAS, sugestões de odômetro e validação | ✅ v0.13 |
 
 ## Decisões recentes
 
@@ -35,11 +38,21 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 - Testes dos cálculos com `npm test` (executor nativo do Node, sem bibliotecas).
 - Fechar o mês só é possível quando ele terminou (a partir do último dia). Mês fechado trava a edição e a exclusão dos dias e não aceita dias novos; o checklist (DAS, reserva) continua editável porque o DAS vence no dia 20 do mês seguinte.
 
+## Como publicar
+
+1. `npm test` (tudo verde) e commit na branch da etapa, PR e merge na `main`.
+2. Aumentar o número `VERSAO` em `sw.js` (o celular só baixa a versão nova se ele mudar).
+3. `git switch main`, `git pull` e `npx firebase deploy --only hosting`.
+4. Regras do Firestore: `npx firebase deploy --only firestore:rules`.
+5. Criar a tag da etapa: `git tag vX.Y` e `git push origin vX.Y`.
+
 ## Próximo passo
 
-Fechar a etapa 9 (fechamento mensal) e seguir para a etapa 10 (PWA, offline e deploy).
+Definir a etapa 14. Antes, aplicar os ajustes da auditoria (ver Pendências).
 
 ## Pendências e ideias
 
 - Possível retorno do orçamento por rota no futuro.
-- Restaurar backup (hoje o app só baixa o arquivo).
+- Testes das telas `hoje`, `ajustes`, `historico`, `login`, `resultado` e `graficos` (hoje só a lógica tem teste).
+- Cabeçalhos de segurança (Content-Security-Policy) no Hosting e restrição da chave de API do Firebase por domínio.
+- Deploy automático pelo GitHub Actions (hoje é manual).
