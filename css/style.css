@@ -61,6 +61,22 @@ h1 {
   color: var(--suave);
 }
 
+/* Marca (logo + nome) no topo do celular. No computador a marca fica dentro da barra de abas (veja #abas::before). */
+#topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+#topo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
 /* Barra de abas fixa na parte de baixo, fácil de alcançar com o polegar */
 #abas {
   position: fixed;
@@ -605,9 +621,19 @@ input {
     border-bottom: 1px solid var(--borda);
   }
 
+  #topo {
+    display: none;
+  }
+
   #abas::before {
     content: "LucroNoKM";
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    padding-left: 42px;
     margin-right: 24px;
+    background: url("../assets/icons/icon-192.png") no-repeat left center / 32px 32px;
+    border-radius: 8px;
     font-size: 20px;
     font-weight: 900;
   }

@@ -2,7 +2,7 @@
 // Os DADOS (dias, ajustes, abastecimentos) não passam por aqui: o próprio Firestore guarda offline.
 // Ao mudar qualquer arquivo do app, aumente o número da VERSAO para o celular baixar a versão nova.
 // O teste sw.test.js confere se todo arquivo do app está na lista abaixo (esquecer um deixa o app sem offline).
-const VERSAO = 'lucronokm-v13';
+const VERSAO = 'lucronokm-v14';
 
 const ARQUIVOS = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
