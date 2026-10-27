@@ -4,7 +4,9 @@ import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimentoDoDia, idDoDia } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
-import { csvDoMes, baixarCSV } from './exportar.js';
+import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
+import { resumoDoAno } from './ano.js';
+import { htmlAno } from './visaoAno.js';
 import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao } from './semana.js';
 import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from './mes.js';
 import { htmlMes, htmlCombustivelSemana } from './visaoMes.js';
@@ -46,7 +48,8 @@ export async function telaHistorico(caixa, usuario) {
   let verDia = null; // dia aberto em detalhe
   let aviso = ''; // mensagem curta (ex.: dia excluído)
   let confirmarExcluir = null; // id do dia que aguarda o segundo toque em ✕
-  let modo = 'semana'; // 'semana' ou 'mes'
+  let modo = 'semana'; // 'semana', 'mes' ou 'ano'
+  let anoTela = hojeISO().slice(0, 4); // ano que está na tela (visão do ano)
   let ym = mesDe(hojeISO()); // mês que está na tela (aaaa-mm)
 
   // Dia de um mês fechado fica travado: não pode ser editado nem excluído.
@@ -82,7 +85,16 @@ export async function telaHistorico(caixa, usuario) {
     const seletor = `<div class="modo" role="group" aria-label="Período">
       <button type="button" data-modo="semana" aria-pressed="${modo === 'semana'}">Semana</button>
       <button type="button" data-modo="mes" aria-pressed="${modo === 'mes'}">Mês</button>
+      <button type="button" data-modo="ano" aria-pressed="${modo === 'ano'}">Ano</button>
     </div>`;
+
+    if (modo === 'ano') {
+      caixa.innerHTML =
+        avisoHtml +
+        seletor +
+        htmlAno({ ano: anoTela, resumo: resumoDoAno(dias, anoTela), limite: config.limiteMei, anoAtual: hojeISO().slice(0, 4) });
+      return;
+    }
 
     if (modo === 'mes') {
       const resumoAtual = resumoDoMes(dias, ym);
@@ -345,6 +357,15 @@ export async function telaHistorico(caixa, usuario) {
     }
     if (botao.dataset.mes) {
       ym = somarMeses(ym, botao.dataset.mes === 'anterior' ? -1 : 1);
+      return desenhar();
+    }
+    if (botao.dataset.ano) {
+      anoTela = String(Number(anoTela) + (botao.dataset.ano === 'anterior' ? -1 : 1));
+      return desenhar();
+    }
+    if (botao.dataset.acao === 'csvAno') {
+      baixarCSV(anoTela, csvDoAno(dias, anoTela));
+      aviso = 'Planilha baixada.';
       return desenhar();
     }
     if (botao.dataset.acao === 'irHoje') {

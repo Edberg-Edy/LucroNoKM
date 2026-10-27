@@ -18,9 +18,13 @@ export function celula(valor) {
 
 const NOME_STATUS = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
 
-// dias = dias fechados (qualquer mês); ym = 'aaaa-mm'. Uma linha por dia, uma coluna por plataforma e uma linha de total.
-export function csvDoMes(dias, ym) {
-  const doMes = dias.filter((d) => d.data.startsWith(ym + '-')).sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+// Planilha de um mês ('aaaa-mm') ou de um ano inteiro ('aaaa').
+export const csvDoMes = (dias, ym) => csvDoPeriodo(dias, ym);
+export const csvDoAno = (dias, ano) => csvDoPeriodo(dias, ano);
+
+// dias = dias fechados (qualquer período); periodo = 'aaaa-mm' ou 'aaaa'. Uma linha por dia, uma coluna por plataforma e uma linha de total.
+function csvDoPeriodo(dias, periodo) {
+  const doMes = dias.filter((d) => d.data.startsWith(periodo + '-')).sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
 
   const plataformas = [];
   for (const d of doMes) for (const p of d.plataformas || []) if (!plataformas.includes(p.nome)) plataformas.push(p.nome);
@@ -55,12 +59,12 @@ export function csvDoMes(dias, ym) {
 }
 
 // Faz o navegador baixar o arquivo.
-export function baixarCSV(ym, texto) {
+export function baixarCSV(nome, texto) {
   const blob = new Blob([texto], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `lucronokm-${ym}.csv`;
+  link.download = `lucronokm-${nome}.csv`;
   document.body.appendChild(link);
   link.click();
   link.remove();

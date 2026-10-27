@@ -1,7 +1,7 @@
 // Testes da planilha CSV do mês. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { csvDoMes, celula } from './exportar.js';
+import { csvDoMes, csvDoAno, celula } from './exportar.js';
 
 const dia = (data, plataformas, c = {}) => ({
   data,
@@ -53,4 +53,10 @@ test('célula protege aspas, ponto e vírgula e fórmulas', () => {
   assert.equal(celula('-5 reais'), "'-5 reais");
   assert.equal(celula('iFood'), 'iFood');
   assert.equal(celula(null), '');
+});
+
+test('planilha do ano junta os meses do ano e ignora outros anos', () => {
+  const l = linhas(csvDoAno([dia('2026-01-10', [{ nome: 'iFood', valor: 50 }]), dia('2026-07-02', [{ nome: 'iFood', valor: 70 }]), dia('2025-12-31', [{ nome: 'iFood', valor: 999 }])], '2026'));
+  assert.equal(l.length, 4); // cabeçalho + 2 dias + total
+  assert.equal(l.at(-1)[l[0].indexOf('iFood')], '120');
 });
