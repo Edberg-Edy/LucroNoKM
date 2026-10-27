@@ -223,6 +223,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       </label>
       <p class="suave">O DAS vence no dia 20 do mês seguinte, por isso estas marcas podem ser alteradas mesmo depois de fechar o mês.</p>
       ${acao}
+      ${temDias ? '<button type="button" class="botao secundario" data-acao="csv">Baixar planilha do mês (CSV)</button>' : ''}
     </section>
     </div>
     </div>`;

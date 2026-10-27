@@ -15,3 +15,17 @@ export function usoDoLimite(faturado, limite) {
     estourou: limite > 0 && faturado > limite,
   };
 }
+
+// Aviso do limite do MEI: só aparece a partir de 80% do limite.
+//   nivel: 'ok' (abaixo de 80%) | 'atencao' (80% a 100%) | 'estourou'
+//   projecao: quanto o ano fecha se o ritmo médio dos meses até agora continuar (só no ano corrente, a partir do mês 2)
+export function alertaMei({ faturado, limite, hoje }) {
+  if (!(limite > 0)) return { nivel: 'ok', percentual: 0, restante: 0, projecao: null };
+  const uso = usoDoLimite(faturado, limite);
+  const percentual = (faturado / limite) * 100; // sem o teto de 100, para o texto dizer quanto passou
+  const mes = Number(hoje.slice(5, 7));
+  const projecao = mes >= 2 && faturado > 0 ? (faturado / mes) * 12 : null;
+  const nivel = uso.estourou ? 'estourou' : percentual >= 80 ? 'atencao' : 'ok';
+  return { nivel, percentual, restante: uso.restante, projecao };
+}
+

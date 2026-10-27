@@ -3,7 +3,8 @@ import { listarDiasFechados, buscarDiaAberto, reabrirDia, excluirDia } from '../
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimentoDoDia, idDoDia } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
-import { faturadoNoAno, usoDoLimite } from './mei.js';
+import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
+import { csvDoMes, baixarCSV } from './exportar.js';
 import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao } from './semana.js';
 import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from './mes.js';
 import { htmlMes, htmlCombustivelSemana } from './visaoMes.js';
@@ -65,7 +66,19 @@ export async function telaHistorico(caixa, usuario) {
             : `O dia ${dataBR(diaAberto.data)} está aberto e ainda não entra nos totais.`
         } <button type="button" class="ghost" data-acao="irHoje">Ir para Hoje</button></p>`
       : '';
-    const avisoHtml = (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
+    // Alerta do limite do MEI (a partir de 80%), no ano corrente, em qualquer visão
+    const anoAtual = hojeISO().slice(0, 4);
+    const m = alertaMei({ faturado: faturadoNoAno(dias, anoAtual), limite: config.limiteMei, hoje: hojeISO() });
+    const avisoMei =
+      m.nivel === 'ok'
+        ? ''
+        : `<p class="aviso-topo" role="status">${
+            m.nivel === 'estourou'
+              ? `Atenção: você já faturou ${dinheiro(faturadoNoAno(dias, anoAtual))} em ${anoAtual}, acima do limite do MEI (${dinheiro(config.limiteMei)}). Procure um contador.`
+              : `Atenção: você já usou ${Math.round(m.percentual)}% do limite do MEI em ${anoAtual}. Restam ${dinheiro(m.restante)}.` +
+                (m.projecao ? ` No ritmo atual o ano fecha perto de ${dinheiro(m.projecao)}${m.projecao > config.limiteMei ? ', acima do limite' : ''}.` : '')
+          } Conta só o que foi lançado no app.</p>`;
+    const avisoHtml = avisoMei + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
     const seletor = `<div class="modo" role="group" aria-label="Período">
       <button type="button" data-modo="semana" aria-pressed="${modo === 'semana'}">Semana</button>
       <button type="button" data-modo="mes" aria-pressed="${modo === 'mes'}">Mês</button>
@@ -337,6 +350,11 @@ export async function telaHistorico(caixa, usuario) {
     if (botao.dataset.acao === 'irHoje') {
       location.hash = 'hoje';
       return;
+    }
+    if (botao.dataset.acao === 'csv') {
+      baixarCSV(ym, csvDoMes(dias, ym));
+      aviso = 'Planilha baixada.';
+      return desenhar();
     }
     if (botao.dataset.acao === 'fecharMes') return fecharOMes();
     if (botao.dataset.acao === 'reabrirMes') return reabrirOMes();
