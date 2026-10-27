@@ -1,5 +1,7 @@
 // LucroNoKM: ponto de entrada. Login com Google, navegação entre as 3 abas e as telas Hoje, Histórico e Ajustes.
-import { observarLogin, sair } from './services/firebase.js';
+import { observarLogin, sair, aguardarEnvio } from './services/firebase.js';
+import { acompanhar } from './modules/gravacao.js';
+import { iniciarSincronia } from './modules/sincronia.js';
 import { telaLogin } from './modules/login.js';
 import { telaHoje } from './modules/hoje.js';
 import { telaHistorico } from './modules/historico.js';
@@ -91,11 +93,14 @@ window.addEventListener('hashchange', desenhar);
 // O Firebase avisa quando o app abre (já logado ou não) e a cada entrada ou saída.
 observarLogin((u) => {
   usuario = u;
+  // Alterações feitas sem sinal e ainda não enviadas (de antes de abrir o app) também entram no indicador.
+  if (u) acompanhar(aguardarEnvio()).catch(() => {});
   carregando = false;
   desenhar();
 });
 
 desenhar();
+iniciarSincronia(document.getElementById('sincronia'));
 
 // PWA: registra o service worker (guarda o app para abrir sem internet).
 if ('serviceWorker' in navigator) {

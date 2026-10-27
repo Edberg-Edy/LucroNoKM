@@ -12,6 +12,7 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  waitForPendingWrites,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig } from '../config/firebase-config.js';
 
@@ -29,3 +30,6 @@ export const sair = () => signOut(auth);
 
 // Chama a função recebida agora e a cada vez que alguém entra ou sai.
 export const observarLogin = (aoMudar) => onAuthStateChanged(auth, aoMudar);
+
+// Resolve quando o servidor confirmou tudo que estava guardado no aparelho (alterações feitas sem sinal).
+export const aguardarEnvio = () => waitForPendingWrites(db);
