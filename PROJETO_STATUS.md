@@ -22,10 +22,13 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 7 | Histórico semanal | ✅ v0.7 |
 | 8 | Editar, excluir, limite do MEI e backup | ✅ v0.8 |
 | 9 | Fechamento mensal | ✅ |
-| 10 | PWA, offline e deploy (Firebase Hosting) | ✅ |
+| 10 | PWA, offline e deploy (GitHub Pages) | ✅ |
 | 11 | Ajustes (branch etapa-11-ajustes) | ✅ |
 | 12 | Robustez: números com ponto de milhar, backup mais rigoroso, testes no GitHub Actions | ✅ v0.12 |
-| 13 | Combustível (abastecimentos e consumo), custos fixos, lembrete do DAS, sugestões de odômetro e validação | ✅ v0.13 |
+| 13 | Combustível (abastecimento no fechamento do dia, consumo real, combustível da semana e do mês, aviso de queda de consumo), custos fixos, lembrete do DAS, sugestões de odômetro e validação | ✅ v0.13 e v0.13.1 |
+| 14 | Indicador de sincronização (sem sinal, enviando, tudo salvo) | ✅ v0.14 |
+| 15 | Alerta de 80% do limite do MEI e planilha CSV do mês | ✅ v0.15 |
+| 16 | Visão do ano e planilha CSV do ano | ✅ v0.16 |
 
 ## Decisões recentes
 
@@ -36,23 +39,27 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 - Ganho por corrida considera só as plataformas que informaram o número de corridas.
 - Editar um dia reabre o dia e mantém a fotografia de parâmetros dele (mudar o litro depois não altera o passado).
 - Testes dos cálculos com `npm test` (executor nativo do Node, sem bibliotecas).
+- Combustível: o lucro do dia usa o valor estimado (km ÷ km/l × litro). O abastecimento informado em "Abasteci hoje" (sempre tanque cheio, odômetro = odômetro final do dia) serve para medir o consumo real e comparar o gasto pago com o estimado. Dia fechado guarda os parâmetros; "Abasteci hoje" fica no documento `abastecimentos/dia-{id}`.
+- Segurança do Firebase conferida em outubro de 2026: chave de API restrita aos sites `edberg-edy.github.io`, `localhost:5500` e `lucrojusto-2fc5f.firebaseapp.com`; domínios autorizados no Authentication; regras do Firestore por usuário.
+- O projeto do Firebase/Google Cloud ainda se chama `lucrojusto-2fc5f` (nome antigo do app); não precisa renomear.
 - Fechar o mês só é possível quando ele terminou (a partir do último dia). Mês fechado trava a edição e a exclusão dos dias e não aceita dias novos; o checklist (DAS, reserva) continua editável porque o DAS vence no dia 20 do mês seguinte.
 
 ## Como publicar
 
 1. `npm test` (tudo verde) e commit na branch da etapa, PR e merge na `main`.
 2. Aumentar o número `VERSAO` em `sw.js` (o celular só baixa a versão nova se ele mudar).
-3. `git switch main`, `git pull` e `npx firebase deploy --only hosting`.
-4. Regras do Firestore: `npx firebase deploy --only firestore:rules`.
-5. Criar a tag da etapa: `git tag vX.Y` e `git push origin vX.Y`.
+3. `git switch main`, `git merge etapa-N-nome` e `git push origin main --tags`. O GitHub Pages publica sozinho em cerca de 1 minuto.
+4. Só se as regras mudarem: `npx firebase deploy --only firestore:rules`.
+5. Criar a tag da etapa antes do push: `git tag vX.Y`.
+6. No navegador e no celular, recarregar duas vezes para o service worker baixar a versão nova.
 
 ## Próximo passo
 
-Definir a etapa 14. Antes, aplicar os ajustes da auditoria (ver Pendências).
+Usar o app por 2 ou 3 semanas e anotar o que incomoda antes de abrir a etapa 17.
 
 ## Pendências e ideias
 
 - Possível retorno do orçamento por rota no futuro.
-- Testes das telas `hoje`, `ajustes`, `historico`, `login`, `resultado` e `graficos` (hoje só a lógica tem teste).
-- Cabeçalhos de segurança (Content-Security-Policy) no Hosting e restrição da chave de API do Firebase por domínio.
-- Deploy automático pelo GitHub Actions (hoje é manual).
+- Gráfico de combustível (km/l por semana), quando houver 5 ou 6 abastecimentos de tanque cheio.
+- Testes das telas `hoje`, `ajustes`, `login`, `resultado` e `graficos` (hoje só a lógica tem teste; o Histórico foi conferido com dados falsos fora do repositório).
+- Testar o login em popup com o app instalado no celular.
