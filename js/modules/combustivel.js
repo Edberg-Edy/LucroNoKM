@@ -127,8 +127,10 @@ export function resumoCombustivel(lista, ym) {
 export function painelDoMes(lista, ym, { estimado, kmPorLitroAjuste }) {
   const r = resumoCombustivel(lista, ym);
   const temAbastecimento = r.abastecimentos > 0;
+  const alerta = alertaConsumo(trechos(lista));
   return {
     ...r,
+    alerta: alerta && alerta.data.startsWith(ym + '-') ? alerta : null,
     estimado,
     kmPorLitroAjuste,
     diferenca: temAbastecimento ? r.valor - estimado : null,

@@ -83,9 +83,13 @@ function htmlCombustivel(c) {
       'Em Ajustes, o botão do consumo medido corrige o km/l para os dias novos. ';
   }
 
+  const aviso = c.alerta
+    ? `<p class="aviso-topo">O último trecho rendeu ${kmL(c.alerta.ultimo)} km/l, ${Math.round(c.alerta.queda * 100)}% abaixo da média anterior (${kmL(c.alerta.media)}). Vale conferir pneus (calibragem), corrente, filtro de ar e vela.</p>`
+    : '';
   return `
     <section class="cartao">
       <h2>Combustível</h2>
+      ${aviso}
       ${linha('Pago nos abastecimentos', dinheiro(c.valor), 'total')}
       ${linha('Estimado pelos dias fechados', dinheiro(c.estimado))}
       ${linha(mais ? 'Gastou a mais que o estimado' : 'Gastou a menos que o estimado', dinheiro(Math.abs(c.diferenca)))}

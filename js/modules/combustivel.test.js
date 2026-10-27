@@ -274,3 +274,11 @@ test('semana vazia: tudo zerado e indicadores vazios; dia sem fotografia não qu
   assert.equal(semFoto.estimadoLitros, 0);
   perto(semFoto.porKm, 0.24);
 });
+
+test('painelDoMes traz o alerta de queda de consumo só no mês em que ele aconteceu', () => {
+  const ab = (id, data, odometro, litros) => ({ id, data, odometro, litros, valor: litros * 6, cheio: true });
+  const lista = [ab('a', '2026-08-01', 1000, 10), ab('b', '2026-08-10', 1250, 10), ab('c', '2026-08-20', 1500, 10), ab('d', '2026-09-05', 1750, 10), ab('e', '2026-09-15', 1900, 10)];
+  const opc = { estimado: 0, kmPorLitroAjuste: 25 };
+  assert.ok(painelDoMes(lista, '2026-09', opc).alerta);
+  assert.equal(painelDoMes(lista, '2026-08', opc).alerta, null);
+});
