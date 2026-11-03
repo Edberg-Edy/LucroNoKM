@@ -32,7 +32,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **156 testes** passando (`npm test`), service worker `lucronokm-v16`.
+Estado atual: **156 testes** passando (`npm test`), service worker `lucronokm-v17`.
 
 ## Decisões recentes
 
