@@ -173,11 +173,11 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
 
     <section class="cartao">
       <h2>Seu dinheiro do mês</h2>
-      ${linha('Guardar (manutenção e custos fixos)', dinheiro(t.guardar), 'total')}
       ${linha('Livre para gastar', dinheiro(t.lucro), 'total')}
+      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(t.guardar + t.combustivel), 'total')}
       ${
         temDias
-          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar)} deste mês para a moto e os custos fixos (DAS, internet etc.). Só o que sobra é seu para gastar.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
+          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto e ${dinheiro(t.fixos)} para os custos fixos (DAS, internet etc.). As despesas você já pagou. Só o que sobra é seu para gastar.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
           : ''
       }
     </section>

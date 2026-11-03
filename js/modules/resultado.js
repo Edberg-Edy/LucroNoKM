@@ -31,6 +31,9 @@ export function htmlResultado(dia) {
     ? `<p class="suave aviso">Informe ${faltas.join(' e ')} para completar os números acima.</p>`
     : '';
 
+  // O combustível entra no que se guarda: ele sai agora no cálculo do dia, mas o abastecimento acontece depois.
+  const totalGuardar = c.combustivel + c.guardar;
+
   const prejuizo =
     c.lucro < 0 ? ' O dia não cobriu os custos: parte do que você guardar vai sair do seu bolso.' : '';
 
@@ -53,10 +56,13 @@ export function htmlResultado(dia) {
     <section class="cartao">
       <h2>Seu dinheiro do dia</h2>
       ${linha('Entrou (faturamento)', dinheiro(c.faturamento))}
-      ${linha('Gastou no dia (combustível e despesas)', '− ' + dinheiro(c.combustivel + c.despesas))}
-      ${linha('Guardar (manutenção e custos fixos)', '− ' + dinheiro(c.guardar), 'total')}
+      ${linha('Combustível', '− ' + dinheiro(c.combustivel))}
+      ${linha('Despesas', '− ' + dinheiro(c.despesas))}
+      ${linha('Manutenção da moto', '− ' + dinheiro(c.manutencao))}
+      ${linha('Custos fixos', '− ' + dinheiro(c.fixos))}
       ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
-      <p class="suave" style="margin-top:8px">Separe ${dinheiro(c.guardar)} deste dia: ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.). Só o que sobra é seu para gastar.${prejuizo}</p>
+      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(totalGuardar), 'total')}
+      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.). As despesas do dia você já pagou. Só o que sobra é seu para gastar.${prejuizo}</p>
     </section>
 
     <section class="cartao">
