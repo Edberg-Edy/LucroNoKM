@@ -34,7 +34,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 19 | Dia em três cartões: dinheiro do dia (plataformas), gastou no dia (combustível, despesas, manutenção, fixos) e para guardar (inclui combustível) | ✅ v0.19 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **167 testes** passando (`npm test`), service worker `lucronokm-v20`.
+Estado atual: **167 testes** passando (`npm test`), service worker `lucronokm-v21`.
 
 ## Decisões recentes
 

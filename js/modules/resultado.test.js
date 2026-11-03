@@ -21,6 +21,7 @@ test('dinheiro do dia separa combustível, despesas, manutenção e custos fixos
   assert.match(card, /Despesas<\/span><b>− R\$\s5,68/);
   assert.match(card, /Manutenção da moto<\/span><b>− R\$\s15,30/);
   assert.match(card, /Custos fixos \(rateio\)<\/span><b>− R\$\s7,54/);
+  assert.match(card, /Total gasto<\/span><b>− R\$\s48,52/);
   assert.match(card, /Lucro líquido<\/span><b>R\$\s162,67/);
   assert.match(html, /Menos os gastos<\/span><b>− R\$\s48,52/);
 });

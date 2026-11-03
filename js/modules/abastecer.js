@@ -26,7 +26,7 @@ const MOSTRAR = 6; // quantos abastecimentos aparecem na lista
 
 // "caixa" é o espaço da tela onde o card aparece; "usuario" é quem está logado.
 export async function telaAbastecer(caixa, usuario) {
-  caixa.innerHTML = '<section class="cartao"><h2>Abastecimento</h2><p class="suave">Carregando…</p></section>';
+  caixa.innerHTML = '<section class="cartao estreito"><h2>Abastecimento</h2><p class="suave">Carregando…</p></section>';
 
   let lista;
   let recentes = [];
@@ -38,7 +38,7 @@ export async function telaAbastecer(caixa, usuario) {
       buscarDiaAberto(usuario.uid).catch(() => null),
     ]);
   } catch (e) {
-    caixa.innerHTML = `<section class="cartao"><h2>Abastecimento</h2>
+    caixa.innerHTML = `<section class="cartao estreito"><h2>Abastecimento</h2>
       <p class="erro">Não foi possível carregar os abastecimentos (${esc(e.code || 'erro')}). Confira a internet.</p></section>`;
     return;
   }
@@ -68,7 +68,7 @@ export async function telaAbastecer(caixa, usuario) {
     const ultimo = ultimoOdometro();
     const recentesDaLista = ordenar(lista).slice(-MOSTRAR).reverse();
     caixa.innerHTML = `
-      <section class="cartao">
+      <section class="cartao estreito">
         <h2>${editandoId ? 'Editar abastecimento' : 'Abastecimento'}</h2>
         <p class="suave">Registre na bomba, assim que abastecer. Vale qualquer horário e qualquer posto.</p>
         <label>Data
