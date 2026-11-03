@@ -55,18 +55,6 @@ export function htmlResultado(dia) {
     <div class="col b">
     <section class="cartao">
       <h2>Seu dinheiro do dia</h2>
-      ${linha('Entrou (faturamento)', dinheiro(c.faturamento))}
-      ${linha('Combustível', '− ' + dinheiro(c.combustivel))}
-      ${linha('Despesas', '− ' + dinheiro(c.despesas))}
-      ${linha('Manutenção da moto', '− ' + dinheiro(c.manutencao))}
-      ${linha('Custos fixos', '− ' + dinheiro(c.fixos))}
-      ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
-      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(totalGuardar), 'total')}
-      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.). As despesas do dia você já pagou. Só o que sobra é seu para gastar.${prejuizo}</p>
-    </section>
-
-    <section class="cartao">
-      <h2>Detalhe</h2>
       ${dia.plataformas
         .map((p) =>
           linha(
@@ -76,11 +64,24 @@ export function htmlResultado(dia) {
         )
         .join('')}
       ${linha('Faturamento', dinheiro(c.faturamento), 'total')}
+    </section>
+
+    <section class="cartao">
+      <h2>Gastou no dia</h2>
       ${linha('Combustível (calculado)', '− ' + dinheiro(c.combustivel))}
+      ${linha('Despesas', '− ' + dinheiro(c.despesas))}
       ${linha('Manutenção da moto', '− ' + dinheiro(c.manutencao))}
-      ${linha('Despesas do dia', '− ' + dinheiro(c.despesas))}
-      ${linha('Custos fixos do dia (rateio)', '− ' + dinheiro(c.fixos))}
+      ${linha('Custos fixos (rateio)', '− ' + dinheiro(c.fixos))}
       ${linha('Lucro líquido', dinheiro(c.lucro), 'total')}
+    </section>
+
+    <section class="cartao">
+      <h2>Para guardar</h2>
+      ${linha('Faturamento', dinheiro(c.faturamento))}
+      ${linha('Menos os gastos', '− ' + dinheiro(c.gastos))}
+      ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
+      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(totalGuardar), 'total')}
+      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.). As despesas do dia você já pagou. Só o que sobra é seu para gastar.${prejuizo}</p>
     </section>
     </div>
     </div>`;

@@ -16,12 +16,13 @@ const dia = {
 
 test('dinheiro do dia separa combustível, despesas, manutenção e custos fixos', () => {
   const html = htmlResultado(dia);
-  const card = html.slice(html.indexOf('Seu dinheiro do dia'), html.indexOf('<h2>Detalhe'));
-  assert.match(card, /Combustível<\/span><b>− R\$\s20,00/);
+  const card = html.slice(html.indexOf('Gastou no dia'), html.indexOf('Para guardar'));
+  assert.match(card, /Combustível \(calculado\)<\/span><b>− R\$\s20,00/);
   assert.match(card, /Despesas<\/span><b>− R\$\s5,68/);
   assert.match(card, /Manutenção da moto<\/span><b>− R\$\s15,30/);
-  assert.match(card, /Custos fixos<\/span><b>− R\$\s7,54/);
-  assert.match(card, /Livre para gastar<\/span><b>R\$\s162,67/);
+  assert.match(card, /Custos fixos \(rateio\)<\/span><b>− R\$\s7,54/);
+  assert.match(card, /Lucro líquido<\/span><b>R\$\s162,67/);
+  assert.match(html, /Menos os gastos<\/span><b>− R\$\s48,52/);
 });
 
 test('guardar inclui o combustível: R$ 20,00 + R$ 15,30 + R$ 7,54 = R$ 42,84', () => {

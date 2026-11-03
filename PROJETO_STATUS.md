@@ -31,10 +31,10 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 16 | Visão do ano e planilha CSV do ano | ✅ v0.16 |
 | 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
 | 18 | Abastecimento como registro próprio na bomba (sem valor), consumo aproximado e card na aba Hoje | ✅ v0.18 |
-| 19 | "Seu dinheiro do dia" separado em combustível, despesas, manutenção e custos fixos; "Guardar" inclui o combustível | ✅ v0.19 |
+| 19 | Dia em três cartões: dinheiro do dia (plataformas), gastou no dia (combustível, despesas, manutenção, fixos) e para guardar (inclui combustível) | ✅ v0.19 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **167 testes** passando (`npm test`), service worker `lucronokm-v19`.
+Estado atual: **167 testes** passando (`npm test`), service worker `lucronokm-v20`.
 
 ## Decisões recentes
 
