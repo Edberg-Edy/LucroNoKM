@@ -38,9 +38,9 @@ O app calcula o resto: lucro, quanto guardar, quanto está livre e o farol do di
 - Editar e excluir dias, com confirmação no próprio app
 
 **Combustível**
-- "Abasteci hoje" no fechamento do dia, com odômetro do posto e opção de tanque cheio ou parcial
-- Consumo real medido de tanque cheio a tanque cheio, com botão para usar o valor no km/l
-- Gasto pago × estimado, por semana e por mês, e aviso de queda de consumo
+- Abastecimento registrado na bomba (aba Hoje): odômetro, litros e "Completei o tanque", sem digitar valor
+- Consumo exato (de tanque cheio a tanque cheio) e consumo aproximado (km ÷ litros de todos os abastecimentos, para quem abastece pouco por vez), com botão para usar o valor medido no km/l
+- Gasto abastecido (litros × preço dos Ajustes) × estimado pelos dias, por semana e por mês, e aviso de queda de consumo
 
 **Histórico**
 - Semana, Mês e Ano em um alternador
@@ -125,7 +125,7 @@ Cada usuário lê e grava apenas os dados que estão dentro da própria conta (`
 | `config` | ajustes: meta, km/l, preço do litro, manutenção, custos fixos, plataformas |
 | `dias` | cada dia, com os parâmetros usados e os valores calculados |
 | `meses` | fechamento mensal e checklist |
-| `abastecimentos` | litros e valor pago, usados para medir o consumo real |
+| `abastecimentos` | odômetro, litros e se o tanque foi completado (valor pago só nos registros antigos) |
 
 Cada dia fechado guarda uma fotografia dos parâmetros (km/l, preço do litro, manutenção, custos fixos). Mudar o preço do litro depois não altera dias antigos.
 
@@ -136,7 +136,8 @@ Cada dia fechado guarda uma fotografia dos parâmetros (km/l, preço do litro, m
 | Fechamento de caixa, não corrida por corrida | Evita que o motoboy abandone o app por cansaço |
 | Km vem do odômetro | Mede o km real, incluindo o rodado sem corrida |
 | Combustível estimado no lucro, real como conferência | O lucro do dia não depende de digitar abastecimentos, e o consumo real mostra a diferença |
-| Abastecimento informado no fechamento do dia | Um único lugar para digitar. Sem odômetro próprio vale o final do dia; só tanque cheio serve de ponto de medida, e o parcial entra no gasto sem estragar o km/l |
+| Abastecimento é um registro próprio, feito na bomba | Vale qualquer horário e posto, porque o odômetro é o da bomba. Só odômetro, litros e "Completei o tanque": o preço do litro já está nos Ajustes |
+| Dois consumos: exato e aproximado | Tanque completo é a única marca confiável do nível do tanque. Quem põe R$ 10 por vez ainda tem uma estimativa, que melhora a cada mês |
 | Manutenção por km | Transforma gastos raros em custo diário justo |
 | Custos fixos rateados pelos dias trabalhados | DAS, internet e outros pesam no lucro de cada dia |
 | Gravação que não trava sem sinal | O Firestore guarda no aparelho e sincroniza depois |
@@ -166,6 +167,7 @@ Valores consultados em outubro de 2026. Conferir sempre no Portal do Empreendedo
 | 15 | Alerta de 80% do MEI e planilha CSV do mês |
 | 16 | Visão do ano e planilha CSV do ano |
 | 17 | Abastecimento com odômetro do posto e opção de tanque cheio ou parcial |
+| 18 | Abastecimento como registro na bomba (sem valor), consumo aproximado e card na aba Hoje |
 
 Próximas ideias: gráfico de consumo por semana e testes das telas. Detalhes em [PROJETO_STATUS.md](PROJETO_STATUS.md).
 

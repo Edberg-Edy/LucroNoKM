@@ -5,7 +5,8 @@
 // (inclusive), são o combustível gasto nos km rodados entre os dois. Abastecimento parcial entra na soma,
 // mas não serve de ponto de medida.
 //
-// Cada abastecimento: { id, data: 'aaaa-mm-dd', odometro: número ou null, litros, valor, cheio: true/false }
+// Cada abastecimento: { id, data: 'aaaa-mm-dd', odometro, litros, cheio: true/false, valor (opcional) }
+// O valor pago é opcional (o app usa o preço do litro dos Ajustes); abastecimentos antigos ainda podem ter valor.
 
 import { lerNumero } from './formatos.js';
 
@@ -41,11 +42,13 @@ export function trechos(lista) {
   let base = null; // último tanque cheio com odômetro: de onde a medida parte
   let litros = 0;
   let valor = 0;
+  let semValor = false; // algum abastecimento do trecho não tem valor pago
 
   for (const a of ordenar(lista)) {
     if (base) {
       litros += a.litros;
-      valor += a.valor;
+      if (Number.isFinite(a.valor)) valor += a.valor;
+      else semValor = true;
     }
     if (a.cheio && Number.isFinite(a.odometro)) {
       if (base) {
@@ -56,16 +59,17 @@ export function trechos(lista) {
             ate: a,
             km,
             litros,
-            valor,
+            valor: semValor ? null : valor,
             kmPorLitro: km / litros,
-            custoPorKm: valor / km,
-            precoMedio: valor / litros,
+            custoPorKm: semValor ? null : valor / km,
+            precoMedio: semValor ? null : valor / litros,
           });
         }
       }
       base = a;
       litros = 0;
       valor = 0;
+      semValor = false;
     }
   }
   return resultado;
@@ -93,48 +97,93 @@ export function alertaConsumo(listaDeTrechos, { limite = 0.1, minimo = 2 } = {})
   return { queda, ultimo: ultimo.kmPorLitro, media, data: ultimo.ate.data };
 }
 
+// ---------- gasto e consumo aproximado ----------
+
+// Quanto foi gasto nos abastecimentos. Usa o valor pago quando existe (abastecimentos antigos); nos demais,
+// litros × preço do litro dos Ajustes. "estimado" = pelo menos um abastecimento entrou por essa conta.
+export function gastoDosAbastecimentos(lista, precoLitro) {
+  let valor = 0;
+  let estimado = false;
+  for (const a of lista) {
+    if (Number.isFinite(a.valor)) valor += a.valor;
+    else {
+      valor += (Number(a.litros) || 0) * (Number(precoLitro) || 0);
+      estimado = true;
+    }
+  }
+  return { valor, estimado };
+}
+
+// Consumo aproximado: km rodados ÷ litros abastecidos no período. Não precisa de tanque cheio.
+// O ponto de partida é o último abastecimento antes do período (ou o primeiro dentro dele) e o de chegada é o
+// último do período; os litros contados são os de todos os abastecimentos depois da partida até a chegada.
+// O erro máximo é a diferença de combustível no tanque entre os dois pontos (no máximo um tanque), por isso a
+// estimativa melhora quanto mais km tem o período. noPeriodo = função (data) => true/false.
+export function consumoAproximado(lista, noPeriodo, { kmMinimo = 50 } = {}) {
+  const medidos = ordenar(lista.filter((a) => Number.isFinite(a.odometro) && Number.isFinite(a.litros)));
+  const primeiro = medidos.findIndex((a) => noPeriodo(a.data));
+  if (primeiro === -1) return null;
+  let ultimo = primeiro;
+  medidos.forEach((a, i) => {
+    if (noPeriodo(a.data)) ultimo = i;
+  });
+  const partida = primeiro > 0 ? primeiro - 1 : primeiro;
+  if (ultimo <= partida) return null;
+
+  const km = medidos[ultimo].odometro - medidos[partida].odometro;
+  const litros = soma(medidos.slice(partida + 1, ultimo + 1), 'litros');
+  if (!(km >= kmMinimo) || !(litros > 0)) return null;
+  return { kmPorLitro: km / litros, km, litros, abastecimentos: ultimo - partida + 1 };
+}
+
 // ---------- resumo do mês ----------
 
 // Resumo dos abastecimentos de um mês ('aaaa-mm').
-//   valor / litros / precoMedio: tudo que foi abastecido no mês (o que saiu do bolso)
-//   kmPorLitro / custoPorKm / kmMedido: só dos trechos que terminaram no mês (o que foi medido de verdade)
-export function resumoCombustivel(lista, ym) {
+//   litros / valor / precoMedio: tudo que foi abastecido no mês (valor = pago, ou litros × preço dos Ajustes)
+//   kmPorLitro / custoPorKm / kmMedido: só dos trechos que terminaram no mês (medida exata, tanque a tanque)
+//   aproximado: estimativa com todos os abastecimentos do mês (veja consumoAproximado)
+export function resumoCombustivel(lista, ym, precoLitro = 0) {
   const abastecimentos = doMes(lista, ym);
   const litros = soma(abastecimentos, 'litros');
-  const valor = soma(abastecimentos, 'valor');
+  const gasto = gastoDosAbastecimentos(abastecimentos, precoLitro);
 
   const medidos = trechos(lista).filter((t) => t.ate.data.startsWith(ym + '-'));
   const kmMedido = soma(medidos, 'km');
   const litrosMedidos = soma(medidos, 'litros');
-  const valorMedido = soma(medidos, 'valor');
+  const valorMedido = medidos.reduce((total, t) => total + (t.valor ?? t.litros * (Number(precoLitro) || 0)), 0);
 
   return {
     abastecimentos: abastecimentos.length,
     litros,
-    valor,
-    precoMedio: litros > 0 ? valor / litros : null,
+    valor: gasto.valor,
+    valorEstimado: gasto.estimado,
+    precoMedio: litros > 0 && !gasto.estimado ? gasto.valor / litros : null,
     trechos: medidos.length,
     kmMedido,
     kmPorLitro: litrosMedidos > 0 ? kmMedido / litrosMedidos : null,
-    custoPorKm: kmMedido > 0 ? valorMedido / kmMedido : null,
+    custoPorKm: kmMedido > 0 && (precoLitro > 0 || medidos.every((t) => t.valor !== null)) ? valorMedido / kmMedido : null,
+    aproximado: consumoAproximado(lista, (data) => data.startsWith(ym + '-')),
   };
 }
 
 // Tudo que a tela do mês mostra sobre combustível.
 //   estimado = combustível que os dias fechados do mês calcularam (km ÷ km/l × preço do litro)
-//   kmPorLitroAjuste = km/l que está nos Ajustes
+//   kmPorLitroAjuste = km/l que está nos Ajustes; precoLitro = preço do litro dos Ajustes
 // diferenca > 0: o app subestimou o gasto (o lucro mostrado nos dias está acima do real).
-export function painelDoMes(lista, ym, { estimado, kmPorLitroAjuste }) {
-  const r = resumoCombustivel(lista, ym);
+// desvio compara o consumo medido (ou, sem ele, o aproximado) com o ajuste; desvioDeEstimativa avisa qual foi usado.
+export function painelDoMes(lista, ym, { estimado, kmPorLitroAjuste, precoLitro = 0 }) {
+  const r = resumoCombustivel(lista, ym, precoLitro);
   const temAbastecimento = r.abastecimentos > 0;
   const alerta = alertaConsumo(trechos(lista));
+  const referencia = r.kmPorLitro ?? (r.aproximado ? r.aproximado.kmPorLitro : null);
   return {
     ...r,
     alerta: alerta && alerta.data.startsWith(ym + '-') ? alerta : null,
     estimado,
     kmPorLitroAjuste,
     diferenca: temAbastecimento ? r.valor - estimado : null,
-    desvio: r.kmPorLitro !== null && kmPorLitroAjuste > 0 ? r.kmPorLitro / kmPorLitroAjuste - 1 : null,
+    desvio: referencia !== null && kmPorLitroAjuste > 0 ? referencia / kmPorLitroAjuste - 1 : null,
+    desvioDeEstimativa: r.kmPorLitro === null && referencia !== null,
   };
 }
 
@@ -144,7 +193,7 @@ export function painelDoMes(lista, ym, { estimado, kmPorLitroAjuste }) {
 //   diasDoPeriodo = dias fechados do período; lista = todos os abastecimentos; datas = datas do período
 // "estimado" vem das contas dos dias (km ÷ km/l × preço do litro): existe mesmo sem lançar abastecimento.
 // "real" só existe se houve abastecimento informado no período.
-export function combustivelDoPeriodo(diasDoPeriodo, lista, datas) {
+export function combustivelDoPeriodo(diasDoPeriodo, lista, datas, precoLitro = 0) {
   const calculados = diasDoPeriodo.map((d) => d.calculados);
   const km = soma(calculados, 'km');
   const estimadoValor = soma(calculados, 'combustivel');
@@ -157,7 +206,7 @@ export function combustivelDoPeriodo(diasDoPeriodo, lista, datas) {
   const medidos = trechos(lista).filter((t) => datas.includes(t.ate.data));
   const litrosMedidos = soma(medidos, 'litros');
   const litros = soma(doPeriodo, 'litros');
-  const valor = soma(doPeriodo, 'valor');
+  const gasto = gastoDosAbastecimentos(doPeriodo, precoLitro);
 
   return {
     km,
@@ -168,10 +217,12 @@ export function combustivelDoPeriodo(diasDoPeriodo, lista, datas) {
     real: doPeriodo.length
       ? {
           abastecimentos: doPeriodo.length,
-          valor,
+          valor: gasto.valor,
+          valorEstimado: gasto.estimado,
           litros,
-          precoMedio: litros > 0 ? valor / litros : null,
+          precoMedio: litros > 0 && !gasto.estimado ? gasto.valor / litros : null,
           kmPorLitro: litrosMedidos > 0 ? soma(medidos, 'km') / litrosMedidos : null,
+          aproximado: consumoAproximado(lista, (data) => datas.includes(data)),
         }
       : null,
   };
@@ -179,72 +230,57 @@ export function combustivelDoPeriodo(diasDoPeriodo, lista, datas) {
 
 // ---------- conferência do que foi digitado ----------
 
-// Confere um abastecimento digitado. "entrada" traz os textos dos campos; "lista" são os abastecimentos já lançados.
+// Confere um abastecimento digitado. "entrada" traz os textos dos campos; "lista" são os abastecimentos já lançados;
+// "dias" (opcional) são dias recentes, para conferir o odômetro contra eles.
+// O odômetro é sempre obrigatório (é ele que mede o consumo). O valor pago é opcional.
 // Devolve { ok: true, dados } ou { ok: false, erro } com uma frase pronta para a tela.
-export function validarAbastecimento(entrada, lista, { hoje, editandoId = null } = {}) {
+export function validarAbastecimento(entrada, lista, { hoje, editandoId = null, dias = [] } = {}) {
   const falha = (erro) => ({ ok: false, erro });
   const cheio = entrada.cheio === true;
 
   const data = String(entrada.data ?? '');
   if (!DATA.test(data) || data > hoje) return falha('Escolha uma data válida (hoje ou anterior).');
 
+  const odometro = lerNumero(entrada.odometro);
+  if (odometro === null || odometro <= 0) return falha('Informe o odômetro de agora: é com ele que o app mede o consumo.');
+
   const litros = lerNumero(entrada.litros);
   if (litros === null || litros <= 0) return falha('Digite os litros abastecidos.');
   if (litros > 60) return falha('Mais de 60 litros? Confira o valor digitado.');
 
-  const valor = lerNumero(entrada.valor);
-  if (valor === null || valor <= 0) return falha('Digite o valor pago.');
-
-  const preco = valor / litros;
-  if (preco < 2 || preco > 20) {
-    return falha(`Deu R$ ${preco.toFixed(2).replace('.', ',')} por litro. Confira os litros e o valor.`);
-  }
-
-  const textoOdometro = String(entrada.odometro ?? '').trim();
-  let odometro = null;
-  if (textoOdometro) {
-    odometro = lerNumero(textoOdometro);
-    if (odometro === null || odometro <= 0) return falha('Odômetro inválido.');
-  } else if (cheio) {
-    return falha('Para marcar "Enchi o tanque", informe o odômetro: é com ele que o app mede o consumo.');
-  }
-
-  // O odômetro nunca diminui com o tempo: confere com os outros abastecimentos.
-  if (odometro !== null) {
-    for (const outro of lista) {
-      if (outro.id === editandoId || !Number.isFinite(outro.odometro) || outro.data === data) continue;
-      if (outro.data < data && outro.odometro > odometro) {
-        return falha(`O odômetro é menor que o do abastecimento de ${brData(outro.data)} (${outro.odometro} km).`);
-      }
-      if (outro.data > data && outro.odometro < odometro) {
-        return falha(`O odômetro é maior que o do abastecimento de ${brData(outro.data)} (${outro.odometro} km).`);
-      }
+  let valor = null;
+  if (String(entrada.valor ?? '').trim()) {
+    valor = lerNumero(entrada.valor);
+    if (valor === null || valor <= 0) return falha('Valor pago inválido.');
+    const preco = valor / litros;
+    if (preco < 2 || preco > 20) {
+      return falha(`Deu R$ ${preco.toFixed(2).replace('.', ',')} por litro. Confira os litros e o valor.`);
     }
   }
 
-  return {
-    ok: true,
-    dados: { data, odometro, litros: arredondar(litros), valor: arredondar(valor), cheio },
-  };
-}
-
-// Abastecimento informado ao fechar o dia. Se "odometro" ficar vazio, vale o odômetro final do dia.
-// Se informado, precisa estar entre o inicial e o final do dia. "cheio" = completou o tanque; abastecimento
-// parcial entra na soma de litros e de gasto, mas não serve de ponto de medida do consumo.
-export function abastecimentoDoFechamento({ data, odometroInicial, odometroFinal, litros, valor, odometro, cheio, hoje }) {
-  const texto = String(odometro ?? '').trim();
-  let usado = odometroFinal;
-  if (texto) {
-    usado = lerNumero(texto);
-    if (usado === null || usado <= 0) return { ok: false, erro: 'Odômetro do abastecimento inválido.' };
-    if (usado < odometroInicial || usado > odometroFinal) {
-      return {
-        ok: false,
-        erro: `O odômetro do abastecimento precisa estar entre o inicial (${odometroInicial} km) e o final (${odometroFinal} km) do dia.`,
-      };
+  // O odômetro nunca diminui com o tempo: confere com os outros abastecimentos e com os dias recentes.
+  for (const outro of lista) {
+    if (outro.id === editandoId || !Number.isFinite(outro.odometro) || outro.data === data) continue;
+    if (outro.data < data && outro.odometro > odometro) {
+      return falha(`O odômetro é menor que o do abastecimento de ${brData(outro.data)} (${outro.odometro} km).`);
+    }
+    if (outro.data > data && outro.odometro < odometro) {
+      return falha(`O odômetro é maior que o do abastecimento de ${brData(outro.data)} (${outro.odometro} km).`);
     }
   }
-  return validarAbastecimento({ data, odometro: String(usado), litros, valor, cheio: cheio === true }, [], { hoje });
+  for (const d of dias) {
+    if (!d.data || d.data === data) continue;
+    if (d.data < data && Number.isFinite(d.odometroFinal) && d.odometroFinal > odometro) {
+      return falha(`O odômetro é menor que o final do dia ${brData(d.data)} (${d.odometroFinal} km).`);
+    }
+    if (d.data > data && Number.isFinite(d.odometroInicial) && d.odometroInicial < odometro) {
+      return falha(`O odômetro é maior que o inicial do dia ${brData(d.data)} (${d.odometroInicial} km).`);
+    }
+  }
+
+  const dados = { data, odometro, litros: arredondar(litros), cheio };
+  if (valor !== null) dados.valor = arredondar(valor);
+  return { ok: true, dados };
 }
 
 const arredondar = (n) => Math.round(n * 100) / 100;

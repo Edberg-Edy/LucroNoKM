@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  abastecimentoDoFechamento,
   ordenar,
+  gastoDosAbastecimentos,
+  consumoAproximado,
   trechos,
   consumoMedio,
   alertaConsumo,
@@ -182,8 +183,8 @@ test('painel do mês: real contra estimado e consumo contra o ajuste', () => {
 
 const hoje = '2026-10-25';
 const entrada = (extra = {}) => ({ data: '2026-10-25', odometro: '12670', litros: '5,6', valor: '33,60', cheio: true, ...extra });
-const erroDe = (e, lista = []) => {
-  const r = validarAbastecimento(e, lista, { hoje });
+const erroDe = (e, lista = [], extra = {}) => {
+  const r = validarAbastecimento(e, lista, { hoje, ...extra });
   assert.equal(r.ok, false);
   return r.erro;
 };
@@ -194,20 +195,35 @@ test('abastecimento válido vira dados já arredondados', () => {
   assert.deepEqual(r.dados, { data: '2026-10-25', odometro: 12670, litros: 5.6, valor: 33.6, cheio: true });
 });
 
-test('sem odômetro só vale se não for tanque cheio', () => {
-  const r = validarAbastecimento(entrada({ odometro: '', cheio: false }), [], { hoje });
-  assert.equal(r.ok, true);
-  assert.equal(r.dados.odometro, null);
+test('o odômetro é sempre obrigatório, mesmo em abastecimento parcial', () => {
+  assert.match(erroDe(entrada({ odometro: '', cheio: false })), /odômetro/i);
   assert.match(erroDe(entrada({ odometro: '' })), /odômetro/i);
+  assert.match(erroDe(entrada({ odometro: 'abc' })), /odômetro/i);
 });
 
-test('recusa data futura, litros e valor vazios ou absurdos', () => {
+test('valor pago é opcional: sem ele o abastecimento vale e o campo não é gravado', () => {
+  const r = validarAbastecimento(entrada({ valor: '' }), [], { hoje });
+  assert.equal(r.ok, true);
+  assert.equal('valor' in r.dados, false);
+  assert.deepEqual(r.dados, { data: '2026-10-25', odometro: 12670, litros: 5.6, cheio: true });
+});
+
+test('odômetro conferido também contra os dias recentes', () => {
+  const dias = [
+    { data: '2026-10-20', odometroInicial: 12500, odometroFinal: 12600 },
+    { data: '2026-10-28', odometroInicial: 12900, odometroFinal: 13000 },
+  ];
+  assert.match(erroDe(entrada({ odometro: '12550' }), [], { dias }), /menor que o final do dia 20\/10/);
+  assert.match(erroDe(entrada({ odometro: '12950' }), [], { dias }), /maior que o inicial do dia 28\/10/);
+  assert.equal(validarAbastecimento(entrada({ odometro: '12700' }), [], { hoje, dias }).ok, true);
+});
+
+test('recusa data futura, litros vazios ou absurdos e valor inválido', () => {
   assert.match(erroDe(entrada({ data: '2026-10-26' })), /data/i);
   assert.match(erroDe(entrada({ data: '' })), /data/i);
   assert.match(erroDe(entrada({ litros: '' })), /litros/i);
   assert.match(erroDe(entrada({ litros: '0' })), /litros/i);
   assert.match(erroDe(entrada({ litros: '70' })), /60 litros/);
-  assert.match(erroDe(entrada({ valor: '' })), /valor/i);
   assert.match(erroDe(entrada({ valor: 'abc' })), /valor/i);
 });
 
@@ -284,33 +300,6 @@ test('painelDoMes traz o alerta de queda de consumo só no mês em que ele acont
   assert.equal(painelDoMes(lista, '2026-08', opc).alerta, null);
 });
 
-const fech = (extra = {}) => ({ data: '2026-11-03', odometroInicial: 1000, odometroFinal: 1120, litros: '5,6', valor: '33,60', odometro: '', cheio: true, hoje: '2026-11-03', ...extra });
-
-test('fechamento: sem odômetro do abastecimento usa o odômetro final do dia', () => {
-  const r = abastecimentoDoFechamento(fech());
-  assert.equal(r.ok, true);
-  assert.equal(r.dados.odometro, 1120);
-  assert.equal(r.dados.cheio, true);
-});
-
-test('fechamento: odômetro do abastecimento informado vale, entre o inicial e o final do dia', () => {
-  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1005' })).dados.odometro, 1005);
-  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1.120' })).dados.odometro, 1120);
-  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1000' })).ok, true);
-});
-
-test('fechamento: odômetro do abastecimento fora do dia ou inválido é recusado', () => {
-  assert.match(abastecimentoDoFechamento(fech({ odometro: '990' })).erro, /entre o inicial \(1000 km\) e o final \(1120 km\)/);
-  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1200' })).ok, false);
-  assert.equal(abastecimentoDoFechamento(fech({ odometro: 'abc' })).ok, false);
-});
-
-test('fechamento: abastecimento parcial é aceito e não vira tanque cheio', () => {
-  const r = abastecimentoDoFechamento(fech({ cheio: false, litros: '2', valor: '12' }));
-  assert.equal(r.ok, true);
-  assert.equal(r.dados.cheio, false);
-});
-
 test('parcial no meio não estraga a medida entre dois tanques cheios', () => {
   const ab = (id, data, odometro, litros, cheio) => ({ id, data, odometro, litros, valor: litros * 6, cheio });
   const lista = [ab('a', '2026-11-01', 1000, 10, true), ab('b', '2026-11-03', 1100, 2, false), ab('c', '2026-11-05', 1250, 8, true)];
@@ -318,4 +307,70 @@ test('parcial no meio não estraga a medida entre dois tanques cheios', () => {
   assert.equal(t.km, 250);
   assert.equal(t.litros, 10); // 2 do parcial + 8 do tanque cheio final
   assert.equal(t.kmPorLitro, 25);
+});
+
+// ---------- sem valor pago: gasto estimado e consumo aproximado ----------
+
+const sv = (id, data, odometro, litros, cheio = false) => ({ id, data, odometro, litros, cheio }); // sem valor
+
+test('gasto dos abastecimentos: usa o valor pago quando existe e litros × preço nos demais', () => {
+  const g = gastoDosAbastecimentos([{ litros: 5, valor: 33 }, { litros: 10 }], 6);
+  assert.equal(g.valor, 93);
+  assert.equal(g.estimado, true);
+  assert.equal(gastoDosAbastecimentos([{ litros: 5, valor: 33 }], 6).estimado, false);
+  assert.equal(gastoDosAbastecimentos([], 6).valor, 0);
+});
+
+test('trecho sem valor pago mede km/l normalmente e deixa custo e preço vazios', () => {
+  const [t] = trechos([sv('a', '2026-11-01', 1000, 10, true), sv('b', '2026-11-04', 1250, 10, true)]);
+  assert.equal(t.kmPorLitro, 25);
+  assert.equal(t.valor, null);
+  assert.equal(t.custoPorKm, null);
+  assert.equal(t.precoMedio, null);
+});
+
+test('consumo aproximado: km do primeiro ao último abastecimento ÷ litros colocados depois do primeiro', () => {
+  // abastecimentos pequenos, nenhum "cheio"
+  const lista = [sv('a', '2026-11-01', 1000, 2), sv('b', '2026-11-02', 1050, 2), sv('c', '2026-11-03', 1100, 2), sv('d', '2026-11-04', 1150, 2)];
+  const r = consumoAproximado(lista, (d) => d.startsWith('2026-11'));
+  assert.equal(r.km, 150);
+  assert.equal(r.litros, 6); // os 2 L do primeiro não entram
+  assert.equal(r.kmPorLitro, 25);
+});
+
+test('consumo aproximado do mês parte do último abastecimento do mês anterior', () => {
+  const lista = [sv('a', '2026-10-30', 1000, 3), sv('b', '2026-11-02', 1100, 4), sv('c', '2026-11-05', 1200, 4)];
+  const r = consumoAproximado(lista, (d) => d.startsWith('2026-11'));
+  assert.equal(r.km, 200);
+  assert.equal(r.litros, 8);
+  assert.equal(r.kmPorLitro, 25);
+});
+
+test('consumo aproximado: precisa de dois pontos e de km suficientes', () => {
+  assert.equal(consumoAproximado([sv('a', '2026-11-01', 1000, 3)], () => true), null);
+  assert.equal(consumoAproximado([], () => true), null);
+  assert.equal(consumoAproximado([sv('a', '2026-11-01', 1000, 3), sv('b', '2026-11-02', 1020, 2)], () => true), null); // só 20 km
+  assert.equal(consumoAproximado([sv('a', '2026-11-01', 1000, 3), sv('b', '2026-11-02', 1100, 2)], (d) => d === '2026-12-01'), null);
+});
+
+test('painel do mês sem valor pago: gasto = litros × preço dos Ajustes e aproximado como referência', () => {
+  const lista = [sv('a', '2026-10-30', 1000, 3), sv('b', '2026-11-02', 1100, 4), sv('c', '2026-11-05', 1200, 4)];
+  const p = painelDoMes(lista, '2026-11', { estimado: 40, kmPorLitroAjuste: 25, precoLitro: 6 });
+  assert.equal(p.valor, 48); // 8 L × R$ 6
+  assert.equal(p.valorEstimado, true);
+  assert.equal(p.precoMedio, null);
+  assert.equal(p.kmPorLitro, null); // nenhum tanque cheio
+  assert.equal(p.aproximado.kmPorLitro, 25);
+  assert.equal(p.diferenca, 8);
+  assert.equal(p.desvioDeEstimativa, true);
+  assert.equal(Math.round(p.desvio * 100), 0);
+});
+
+test('semana sem valor pago: gasto estimado e consumo aproximado', () => {
+  const dias = [{ data: '2026-11-03', calculados: { km: 100, combustivel: 24 }, snapshot: { kmPorLitro: 25 } }];
+  const lista = [sv('a', '2026-11-01', 1000, 3), sv('b', '2026-11-03', 1100, 4)];
+  const c = combustivelDoPeriodo(dias, lista, ['2026-11-03'], 6);
+  assert.equal(c.real.valor, 24);
+  assert.equal(c.real.valorEstimado, true);
+  assert.equal(c.real.aproximado.kmPorLitro, 25);
 });

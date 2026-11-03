@@ -30,9 +30,10 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 15 | Alerta de 80% do limite do MEI e planilha CSV do mês | ✅ v0.15 |
 | 16 | Visão do ano e planilha CSV do ano | ✅ v0.16 |
 | 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
+| 18 | Abastecimento como registro próprio na bomba (sem valor), consumo aproximado e card na aba Hoje | ✅ v0.18 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **156 testes** passando (`npm test`), service worker `lucronokm-v17`.
+Estado atual: **164 testes** passando (`npm test`), service worker `lucronokm-v18`.
 
 ## Decisões recentes
 
@@ -43,7 +44,7 @@ Estado atual: **156 testes** passando (`npm test`), service worker `lucronokm-v1
 - Ganho por corrida considera só as plataformas que informaram o número de corridas.
 - Editar um dia reabre o dia e mantém a fotografia de parâmetros dele (mudar o litro depois não altera o passado).
 - Testes dos cálculos com `npm test` (executor nativo do Node, sem bibliotecas).
-- Combustível: o lucro do dia usa o valor estimado (km ÷ km/l × litro). O abastecimento informado em "Abasteci hoje" serve para medir o consumo real e comparar o gasto pago com o estimado. Campos opcionais: odômetro no abastecimento (vazio = odômetro final do dia; se informado, precisa estar entre o inicial e o final) e "Completei o tanque" (desmarcado = parcial, que soma litros e gasto mas não é ponto de medida). Dia fechado guarda os parâmetros; "Abasteci hoje" fica no documento `abastecimentos/dia-{id}`.
+- Combustível: o lucro do dia usa o valor estimado (km ÷ km/l × litro). O abastecimento é um registro próprio, feito na bomba (aba Hoje): data, odômetro (obrigatório), litros e "Completei o tanque" (a escolha fica lembrada). Não existe campo de valor: o gasto abastecido é litros × preço do litro dos Ajustes (registros antigos com valor pago continuam valendo). Consumo exato = entre dois tanques completos; consumo aproximado = km do abastecimento anterior ao último ÷ litros colocados depois do primeiro (erro máximo de um tanque, melhora com os km). Excluir um dia não apaga abastecimentos.
 - Segurança do Firebase conferida em outubro de 2026: chave de API restrita aos sites `edberg-edy.github.io`, `localhost:5500` e `lucrojusto-2fc5f.firebaseapp.com`; domínios autorizados no Authentication; regras do Firestore por usuário.
 - O projeto do Firebase/Google Cloud continua com o nome antigo (LucroJusto, ID `lucrojusto-2fc5f`). O ID não pode ser mudado e o nome só aparece na janela de login do Google; decidido deixar como está porque não compensa o trabalho.
 - Gravação sem sinal: o app não trava; o Firestore guarda no aparelho e a faixa do topo (indicador de sincronização) mostra "sem sinal", "enviando" ou "tudo salvo". Alterações pendentes de antes de abrir o app também entram na contagem.
@@ -65,7 +66,7 @@ Mudanças só de texto (README, status) não precisam de teste nem de `VERSAO`.
 
 ## Próximo passo
 
-Usar o app por 2 ou 3 semanas e anotar o que incomoda antes de abrir a etapa 18.
+Usar o app por 2 ou 3 semanas e anotar o que incomoda antes de abrir a etapa 19. Ajustar o registro de abastecimento conforme o uso na bomba.
 
 ## Pendências e ideias
 

@@ -7,7 +7,7 @@ import { listarMeses, salvarMes } from '../services/meses.js';
 import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcularDiaFechado } from './calculos.js';
 import { mesDe } from './mes.js';
 import { montarBackup, baixarBackup, validarBackup, prepararRestauracao } from './backup.js';
-import { trechos, consumoMedio, kmL } from './combustivel.js';
+import { trechos, consumoMedio, consumoAproximado, kmL } from './combustivel.js';
 import { validarCampoAjuste } from './validacao.js';
 import { padroes } from '../config/padroes.js';
 import { dinheiro, esc } from './formatos.js';
@@ -42,6 +42,7 @@ export async function telaAjustes(caixa, usuario) {
   let pendenteRecalculo = null; // depois do 1º toque em "Recalcular": { alvos, travados } aguardando o 2º toque
   let pendenteRestauro = null; // depois de escolher o arquivo de backup: lista pronta aguardando a confirmação
   let consumo = null; // consumo real medido pelos abastecimentos (ou null enquanto não dá para medir)
+  let aproximado = null; // estimativa com todos os abastecimentos (km rodados ÷ litros), usada quando ainda não há medida exata
   let consumoPronto = false; // true quando a leitura dos abastecimentos terminou
   let consumoErro = false; // true se não foi possível ler os abastecimentos
 
@@ -68,6 +69,7 @@ export async function telaAjustes(caixa, usuario) {
     listarAbastecimentos(usuario.uid)
       .then((lista) => {
         consumo = consumoMedio(trechos(lista));
+        aproximado = consumoAproximado(lista, () => true);
       })
       .catch(() => {
         consumoErro = true;
@@ -87,9 +89,13 @@ export async function telaAjustes(caixa, usuario) {
 
     if (!consumoPronto) texto.textContent = 'Calculando…';
     else if (consumoErro) texto.textContent = 'Não foi possível ler os abastecimentos. Confira a internet.';
-    else if (!consumo) {
+    else if (!consumo && aproximado) {
       texto.textContent =
-        'Ainda não dá para medir. Informe os litros e o valor ("Abasteci hoje") ao fechar o dia em dois dias com abastecimento, e o app calcula o km/l real da sua moto.';
+        `Aproximado: ${kmL(aproximado.kmPorLitro)} km/l (${Math.round(aproximado.km)} km rodados ÷ ${Math.round(aproximado.litros * 10) / 10} L abastecidos). ` +
+        `Nos Ajustes: ${kmL(config.kmPorLitro)} km/l. Para uma medida exata, marque "Completei o tanque" em dois abastecimentos.`;
+    } else if (!consumo) {
+      texto.textContent =
+        'Ainda não dá para medir. Registre os abastecimentos na aba Hoje (odômetro e litros) e o app calcula o km/l real da sua moto.';
     } else {
       const real = Math.round(consumo.kmPorLitro * 10) / 10;
       const atual = config.kmPorLitro;

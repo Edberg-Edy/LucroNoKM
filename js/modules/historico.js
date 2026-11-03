@@ -1,7 +1,7 @@
 // Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI) e visão do mês (fechamento mensal).
 import { listarDiasFechados, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
-import { listarAbastecimentos, excluirAbastecimentoDoDia, idDoDia } from '../services/abastecimentos.js';
+import { listarAbastecimentos } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
@@ -120,6 +120,7 @@ export async function telaHistorico(caixa, usuario) {
           combustivel: painelDoMes(abastecimentos, ym, {
             estimado: resumoAtual.totais.combustivel,
             kmPorLitroAjuste: config.kmPorLitro,
+            precoLitro: config.precoLitro,
           }),
           fixos: acertoDosFixos({ devido: totalFixos(config.fixos), descontado: resumoAtual.totais.fixos, terminou }),
         });
@@ -130,7 +131,7 @@ export async function telaHistorico(caixa, usuario) {
     const semana = resumoDaSemana(dias, datas);
     const anterior = resumoDaSemana(dias, datasDaSemana(somarDias(inicio, -7)));
     const t = semana.totais;
-    const combustivel = combustivelDoPeriodo(dias.filter((d) => datas.includes(d.data)), abastecimentos, datas);
+    const combustivel = combustivelDoPeriodo(dias.filter((d) => datas.includes(d.data)), abastecimentos, datas, config.precoLitro);
     const maximo = maiorValor(semana.porDia);
 
     const v = variacao(t.lucro, anterior.totais.lucro);
@@ -284,8 +285,6 @@ export async function telaHistorico(caixa, usuario) {
     }
     try {
       await excluirDia(usuario.uid, id);
-      excluirAbastecimentoDoDia(usuario.uid, id).catch(() => {}); // o abastecimento informado nesse dia sai junto
-      abastecimentos = abastecimentos.filter((a) => a.id !== idDoDia(id));
       dias = dias.filter((d) => d.id !== id);
       aviso = 'Dia excluído.';
       selecionado = null;

@@ -167,3 +167,11 @@ test('preparar a restauração leva os abastecimentos, sem código e sem carimbo
   delete antigo.abastecimentos;
   assert.deepEqual(prepararRestauracao(antigo).abastecimentos, []);
 });
+
+test('abastecimento sem valor pago (formato novo) é aceito; valor inválido continua recusado', () => {
+  const b = backupOk();
+  b.abastecimentos = [{ id: 'x1', data: '2026-11-03', odometro: 1000, litros: 5, cheio: true }];
+  assert.equal(validarBackup(b).ok, true);
+  b.abastecimentos = [{ id: 'x1', data: '2026-11-03', odometro: 1000, litros: 5, cheio: true, valor: 'abc' }];
+  assert.equal(validarBackup(b).ok, false);
+});

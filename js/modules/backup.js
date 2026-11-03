@@ -97,7 +97,8 @@ function erroNoDia(d) {
 function erroNoAbastecimento(a) {
   if (!objeto(a) || !idValido(a.id)) return 'Há um abastecimento sem identificação válida no backup.';
   if (!texto(a.data) || !DATA.test(a.data)) return `Abastecimento com data inválida no backup (${a.id}).`;
-  if (!numero(a.litros) || a.litros <= 0 || !numero(a.valor) || a.valor < 0) return `Abastecimento de ${a.data} com litros ou valor inválidos.`;
+  if (!numero(a.litros) || a.litros <= 0) return `Abastecimento de ${a.data} com litros inválidos.`;
+  if (a.valor !== undefined && a.valor !== null && (!numero(a.valor) || a.valor < 0)) return `Abastecimento de ${a.data} com valor inválido.`;
   if (a.odometro !== undefined && !nuloOuNumero(a.odometro)) return `Abastecimento de ${a.data} com odômetro inválido.`;
   if (a.cheio !== undefined && typeof a.cheio !== 'boolean') return `Abastecimento de ${a.data} com "tanque cheio" inválido.`;
   return null;

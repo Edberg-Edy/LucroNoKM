@@ -1,16 +1,14 @@
 // Leitura e gravação dos abastecimentos no Firestore. Nada de tela aqui.
 // Cada abastecimento fica em: users/{uid}/abastecimentos/{id}   (as regras do Firestore já cobrem tudo dentro de users/{uid})
-// Campos: { data: 'aaaa-mm-dd', odometro: número ou null, litros, valor, cheio: true/false }
-// O abastecimento informado ao fechar o dia usa o código "dia-{código do dia}": assim editar ou excluir o dia
-// atualiza ou remove o abastecimento dele, sem duplicar.
+// Campos: { data: 'aaaa-mm-dd', odometro, litros, cheio: true/false, valor (opcional: só nos abastecimentos antigos) }
+// Cada abastecimento é um registro próprio, feito na bomba: não depende de nenhum dia de trabalho.
 // As gravações usam gravar(): sem sinal elas não travam o app (ficam guardadas no aparelho e sincronizam depois).
 import {
   collection,
   doc,
-  getDoc,
-  getDocFromCache,
   getDocs,
   setDoc,
+  updateDoc,
   deleteDoc,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
@@ -22,37 +20,23 @@ const colecao = (uid) => collection(db, 'users', uid, 'abastecimentos');
 const refAbastecimento = (uid, id) => doc(db, 'users', uid, 'abastecimentos', id);
 const comId = (achado) => ({ id: achado.id, ...achado.data() });
 
-// Código do abastecimento ligado a um dia.
-export const idDoDia = (diaId) => `dia-${diaId}`;
-
 // Todos os abastecimentos (Histórico, Ajustes e backup).
 export async function listarAbastecimentos(uid) {
   const resultado = await getDocs(colecao(uid));
   return resultado.docs.map(comId);
 }
 
-// Lê um abastecimento pelo código (ou null se não existir). Sem sinal, usa o que está guardado no aparelho.
-export async function lerAbastecimento(uid, id) {
-  const ref = refAbastecimento(uid, id);
-  let foto;
-  try {
-    foto = await getDoc(ref);
-  } catch (e) {
-    try {
-      foto = await getDocFromCache(ref);
-    } catch (e2) {
-      return null;
-    }
-  }
-  return foto.exists() ? comId(foto) : null;
+// Registra um abastecimento novo. O código nasce no próprio aparelho, por isso funciona sem sinal.
+// Devolve { id, sincronizado }.
+export function novoAbastecimento(uid, dados) {
+  const ref = doc(colecao(uid));
+  return gravar(setDoc(ref, { ...dados, criadoEm: serverTimestamp() })).then((r) => ({ id: ref.id, ...r }));
 }
 
-// Grava (ou regrava por cima) o abastecimento informado ao fechar o dia. Devolve { sincronizado }.
-export const salvarAbastecimentoDoDia = (uid, diaId, dados) =>
-  gravar(setDoc(refAbastecimento(uid, idDoDia(diaId)), { ...dados, criadoEm: serverTimestamp() }));
+// Muda só os campos informados (um campo que não vem, como o valor pago de um abastecimento antigo, fica como está).
+export const atualizarAbastecimento = (uid, id, dados) => gravar(updateDoc(refAbastecimento(uid, id), dados));
 
-// Remove o abastecimento do dia (não dá erro se ele não existir).
-export const excluirAbastecimentoDoDia = (uid, diaId) => gravar(deleteDoc(refAbastecimento(uid, idDoDia(diaId))));
+export const excluirAbastecimento = (uid, id) => gravar(deleteDoc(refAbastecimento(uid, id)));
 
 // lista = [{ id, campos }]: grava cada abastecimento inteiro (usado na restauração de backup). Mesmo código = sobrescreve.
 export const restaurarAbastecimentos = (uid, lista) =>
