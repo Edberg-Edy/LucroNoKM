@@ -228,5 +228,24 @@ export function validarAbastecimento(entrada, lista, { hoje, editandoId = null }
   };
 }
 
+// Abastecimento informado ao fechar o dia. Se "odometro" ficar vazio, vale o odômetro final do dia.
+// Se informado, precisa estar entre o inicial e o final do dia. "cheio" = completou o tanque; abastecimento
+// parcial entra na soma de litros e de gasto, mas não serve de ponto de medida do consumo.
+export function abastecimentoDoFechamento({ data, odometroInicial, odometroFinal, litros, valor, odometro, cheio, hoje }) {
+  const texto = String(odometro ?? '').trim();
+  let usado = odometroFinal;
+  if (texto) {
+    usado = lerNumero(texto);
+    if (usado === null || usado <= 0) return { ok: false, erro: 'Odômetro do abastecimento inválido.' };
+    if (usado < odometroInicial || usado > odometroFinal) {
+      return {
+        ok: false,
+        erro: `O odômetro do abastecimento precisa estar entre o inicial (${odometroInicial} km) e o final (${odometroFinal} km) do dia.`,
+      };
+    }
+  }
+  return validarAbastecimento({ data, odometro: String(usado), litros, valor, cheio: cheio === true }, [], { hoje });
+}
+
 const arredondar = (n) => Math.round(n * 100) / 100;
 const brData = (iso) => iso.split('-').reverse().join('/').slice(0, 5);

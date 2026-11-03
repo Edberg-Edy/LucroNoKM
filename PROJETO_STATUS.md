@@ -29,9 +29,10 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 14 | Indicador de sincronização (sem sinal, enviando, tudo salvo) | ✅ v0.14 |
 | 15 | Alerta de 80% do limite do MEI e planilha CSV do mês | ✅ v0.15 |
 | 16 | Visão do ano e planilha CSV do ano | ✅ v0.16 |
+| 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **151 testes** passando (`npm test`), service worker `lucronokm-v15`.
+Estado atual: **156 testes** passando (`npm test`), service worker `lucronokm-v16`.
 
 ## Decisões recentes
 
@@ -42,7 +43,7 @@ Estado atual: **151 testes** passando (`npm test`), service worker `lucronokm-v1
 - Ganho por corrida considera só as plataformas que informaram o número de corridas.
 - Editar um dia reabre o dia e mantém a fotografia de parâmetros dele (mudar o litro depois não altera o passado).
 - Testes dos cálculos com `npm test` (executor nativo do Node, sem bibliotecas).
-- Combustível: o lucro do dia usa o valor estimado (km ÷ km/l × litro). O abastecimento informado em "Abasteci hoje" (sempre tanque cheio, odômetro = odômetro final do dia) serve para medir o consumo real e comparar o gasto pago com o estimado. Dia fechado guarda os parâmetros; "Abasteci hoje" fica no documento `abastecimentos/dia-{id}`.
+- Combustível: o lucro do dia usa o valor estimado (km ÷ km/l × litro). O abastecimento informado em "Abasteci hoje" serve para medir o consumo real e comparar o gasto pago com o estimado. Campos opcionais: odômetro no abastecimento (vazio = odômetro final do dia; se informado, precisa estar entre o inicial e o final) e "Completei o tanque" (desmarcado = parcial, que soma litros e gasto mas não é ponto de medida). Dia fechado guarda os parâmetros; "Abasteci hoje" fica no documento `abastecimentos/dia-{id}`.
 - Segurança do Firebase conferida em outubro de 2026: chave de API restrita aos sites `edberg-edy.github.io`, `localhost:5500` e `lucrojusto-2fc5f.firebaseapp.com`; domínios autorizados no Authentication; regras do Firestore por usuário.
 - O projeto do Firebase/Google Cloud continua com o nome antigo (LucroJusto, ID `lucrojusto-2fc5f`). O ID não pode ser mudado e o nome só aparece na janela de login do Google; decidido deixar como está porque não compensa o trabalho.
 - Gravação sem sinal: o app não trava; o Firestore guarda no aparelho e a faixa do topo (indicador de sincronização) mostra "sem sinal", "enviando" ou "tudo salvo". Alterações pendentes de antes de abrir o app também entram na contagem.
@@ -64,7 +65,7 @@ Mudanças só de texto (README, status) não precisam de teste nem de `VERSAO`.
 
 ## Próximo passo
 
-Usar o app por 2 ou 3 semanas e anotar o que incomoda antes de abrir a etapa 17.
+Usar o app por 2 ou 3 semanas e anotar o que incomoda antes de abrir a etapa 18.
 
 ## Pendências e ideias
 

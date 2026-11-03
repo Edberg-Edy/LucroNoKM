@@ -6,7 +6,7 @@ import { mesEstaFechado, listarMeses } from '../services/meses.js';
 import { calcularDia, parametrosDoDia, lerHoras } from './calculos.js';
 import { htmlResultado } from './resultado.js';
 import { lerAbastecimento, salvarAbastecimentoDoDia, excluirAbastecimentoDoDia } from '../services/abastecimentos.js';
-import { validarAbastecimento } from './combustivel.js';
+import { abastecimentoDoFechamento } from './combustivel.js';
 import { odometroSugerido, conferirOdometroInicial } from './sugestoes.js';
 import { lembreteDAS } from './lembretes.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
@@ -74,6 +74,10 @@ export async function telaHoje(raiz, usuario) {
       horas: dia.horas ? String(dia.horas).replace('.', ',') : '',
       abLitros: abastecimentoDoDia ? String(abastecimentoDoDia.litros).replace('.', ',') : '',
       abValor: abastecimentoDoDia ? String(abastecimentoDoDia.valor).replace('.', ',') : '',
+      // só mostra o odômetro do abastecimento quando ele é diferente do final do dia
+      abOdometro:
+        abastecimentoDoDia && abastecimentoDoDia.odometro && abastecimentoDoDia.odometro !== dia.odometroFinal ? String(abastecimentoDoDia.odometro) : '',
+      abCheio: abastecimentoDoDia && abastecimentoDoDia.cheio ? '1' : '',
     };
     nomesPlataformas().forEach((nome, i) => {
       const p = dia.plataformas.find((x) => x.nome === nome);
@@ -229,7 +233,11 @@ export async function telaHoje(raiz, usuario) {
         <label>Abasteci hoje: valor pago em R$ (opcional)
           <input type="text" inputmode="decimal" data-f="abValor" placeholder="Ex.: 33,60" value="${r('abValor')}">
         </label>
-        <p class="suave">Encha sempre até a bomba desarmar. Nos dias sem abastecimento, deixe em branco.</p>
+        <label>Odômetro no abastecimento (opcional)
+          <input type="text" inputmode="decimal" data-f="abOdometro" placeholder="Vazio = usa o odômetro final" value="${r('abOdometro')}">
+        </label>
+        <label class="marca"><input type="checkbox" data-f="abCheio" ${rascunho.abCheio ? 'checked' : ''}> Completei o tanque (até a bomba desarmar)</label>
+        <p class="suave">Marque "Completei o tanque" só se encheu de verdade: é assim que o app mede o km/l. Abastecimento parcial entra no gasto e nos litros sem atrapalhar a medida. Se abasteceu em outro momento do dia, informe o odômetro que marcava no posto. Nos dias sem abastecimento, deixe em branco.</p>
         <p class="erro" id="erroFechar" role="alert"></p>
         <button type="button" class="botao" data-acao="fechar">${emEdicao() ? 'Salvar alterações' : 'Fechar o dia'}</button>
       </section>
@@ -338,14 +346,19 @@ export async function telaHoje(raiz, usuario) {
       }
     }
 
-    // Abastecimento do dia (opcional): usa o odômetro final do dia e conta como tanque cheio.
+    // Abastecimento do dia (opcional). Sem odômetro próprio usa o final do dia; só conta como tanque cheio se marcado.
     let abastecimento = null;
     if ((rascunho.abLitros || '').trim() || (rascunho.abValor || '').trim()) {
-      const conferido = validarAbastecimento(
-        { data, odometro: String(odometroFinal), litros: rascunho.abLitros, valor: rascunho.abValor, cheio: true },
-        [],
-        { hoje: hojeISO() }
-      );
+      const conferido = abastecimentoDoFechamento({
+        data,
+        odometroInicial: dia.odometroInicial,
+        odometroFinal,
+        litros: rascunho.abLitros,
+        valor: rascunho.abValor,
+        odometro: rascunho.abOdometro,
+        cheio: rascunho.abCheio === '1',
+        hoje: hojeISO(),
+      });
       if (!conferido.ok) return erro(conferido.erro);
       abastecimento = conferido.dados;
     }
@@ -464,7 +477,7 @@ export async function telaHoje(raiz, usuario) {
   caixa.addEventListener('input', (evento) => {
     const campo = evento.target.dataset.f;
     if (campo) {
-      rascunho[campo] = evento.target.value;
+      rascunho[campo] = evento.target.type === 'checkbox' ? (evento.target.checked ? '1' : '') : evento.target.value;
       guardarRascunho();
     }
   });

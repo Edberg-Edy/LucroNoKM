@@ -38,7 +38,7 @@ O app calcula o resto: lucro, quanto guardar, quanto está livre e o farol do di
 - Editar e excluir dias, com confirmação no próprio app
 
 **Combustível**
-- "Abasteci hoje" no fechamento do dia
+- "Abasteci hoje" no fechamento do dia, com odômetro do posto e opção de tanque cheio ou parcial
 - Consumo real medido de tanque cheio a tanque cheio, com botão para usar o valor no km/l
 - Gasto pago × estimado, por semana e por mês, e aviso de queda de consumo
 
@@ -136,7 +136,7 @@ Cada dia fechado guarda uma fotografia dos parâmetros (km/l, preço do litro, m
 | Fechamento de caixa, não corrida por corrida | Evita que o motoboy abandone o app por cansaço |
 | Km vem do odômetro | Mede o km real, incluindo o rodado sem corrida |
 | Combustível estimado no lucro, real como conferência | O lucro do dia não depende de digitar abastecimentos, e o consumo real mostra a diferença |
-| Abastecimento informado no fechamento do dia | Um único lugar para digitar, usando o odômetro final como ponto de medida |
+| Abastecimento informado no fechamento do dia | Um único lugar para digitar. Sem odômetro próprio vale o final do dia; só tanque cheio serve de ponto de medida, e o parcial entra no gasto sem estragar o km/l |
 | Manutenção por km | Transforma gastos raros em custo diário justo |
 | Custos fixos rateados pelos dias trabalhados | DAS, internet e outros pesam no lucro de cada dia |
 | Gravação que não trava sem sinal | O Firestore guarda no aparelho e sincroniza depois |
@@ -165,6 +165,7 @@ Valores consultados em outubro de 2026. Conferir sempre no Portal do Empreendedo
 | 14 | Indicador de sincronização |
 | 15 | Alerta de 80% do MEI e planilha CSV do mês |
 | 16 | Visão do ano e planilha CSV do ano |
+| 17 | Abastecimento com odômetro do posto e opção de tanque cheio ou parcial |
 
 Próximas ideias: gráfico de consumo por semana e testes das telas. Detalhes em [PROJETO_STATUS.md](PROJETO_STATUS.md).
 

@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  abastecimentoDoFechamento,
   ordenar,
   trechos,
   consumoMedio,
@@ -281,4 +282,40 @@ test('painelDoMes traz o alerta de queda de consumo só no mês em que ele acont
   const opc = { estimado: 0, kmPorLitroAjuste: 25 };
   assert.ok(painelDoMes(lista, '2026-09', opc).alerta);
   assert.equal(painelDoMes(lista, '2026-08', opc).alerta, null);
+});
+
+const fech = (extra = {}) => ({ data: '2026-11-03', odometroInicial: 1000, odometroFinal: 1120, litros: '5,6', valor: '33,60', odometro: '', cheio: true, hoje: '2026-11-03', ...extra });
+
+test('fechamento: sem odômetro do abastecimento usa o odômetro final do dia', () => {
+  const r = abastecimentoDoFechamento(fech());
+  assert.equal(r.ok, true);
+  assert.equal(r.dados.odometro, 1120);
+  assert.equal(r.dados.cheio, true);
+});
+
+test('fechamento: odômetro do abastecimento informado vale, entre o inicial e o final do dia', () => {
+  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1005' })).dados.odometro, 1005);
+  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1.120' })).dados.odometro, 1120);
+  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1000' })).ok, true);
+});
+
+test('fechamento: odômetro do abastecimento fora do dia ou inválido é recusado', () => {
+  assert.match(abastecimentoDoFechamento(fech({ odometro: '990' })).erro, /entre o inicial \(1000 km\) e o final \(1120 km\)/);
+  assert.equal(abastecimentoDoFechamento(fech({ odometro: '1200' })).ok, false);
+  assert.equal(abastecimentoDoFechamento(fech({ odometro: 'abc' })).ok, false);
+});
+
+test('fechamento: abastecimento parcial é aceito e não vira tanque cheio', () => {
+  const r = abastecimentoDoFechamento(fech({ cheio: false, litros: '2', valor: '12' }));
+  assert.equal(r.ok, true);
+  assert.equal(r.dados.cheio, false);
+});
+
+test('parcial no meio não estraga a medida entre dois tanques cheios', () => {
+  const ab = (id, data, odometro, litros, cheio) => ({ id, data, odometro, litros, valor: litros * 6, cheio });
+  const lista = [ab('a', '2026-11-01', 1000, 10, true), ab('b', '2026-11-03', 1100, 2, false), ab('c', '2026-11-05', 1250, 8, true)];
+  const [t] = trechos(lista);
+  assert.equal(t.km, 250);
+  assert.equal(t.litros, 10); // 2 do parcial + 8 do tanque cheio final
+  assert.equal(t.kmPorLitro, 25);
 });
