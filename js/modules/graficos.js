@@ -15,7 +15,7 @@ export function htmlGraficoLucro(porDia, maximo, selecionado) {
   return `<div class="barras">${porDia
     .map(
       (d, i) => `
-    <button type="button" class="barra-dia" data-dia="${d.data}" aria-pressed="${selecionado === d.data}" aria-label="${NOMES[i]}">
+    <button type="button" class="barra-dia" data-dia="${d.data}" aria-pressed="${selecionado === d.data}" aria-label="${d.tem ? reais(d.lucro) + ' ' : ''}${NOMES[i]}">
       <small class="${d.tem ? d.status : ''}">${d.tem ? reais(d.lucro) : ''}</small>
       <i class="${d.tem ? d.status : 'vazio'}" style="height:${d.tem ? altura(d.lucro, maximo) : 2}px"></i>
       <span>${NOMES[i]}</span>
@@ -29,7 +29,7 @@ export function htmlGraficoGastos(porDia, maximo, selecionado) {
   return `<div class="barras">${porDia
     .map(
       (d, i) => `
-    <button type="button" class="barra-dia" data-dia="${d.data}" aria-pressed="${selecionado === d.data}" aria-label="${NOMES[i]}">
+    <button type="button" class="barra-dia" data-dia="${d.data}" aria-pressed="${selecionado === d.data}" aria-label="${d.tem ? reais(d.gastos) + ' ' : ''}${NOMES[i]}">
       <small>${d.tem ? reais(d.gastos) : ''}</small>
       <i class="${d.tem ? 'neutra' : 'vazio'}" style="height:${d.tem ? altura(d.gastos, maximo) : 2}px"></i>
       <span>${NOMES[i]}</span>

@@ -755,3 +755,37 @@ input {
     display: block;
   }
 }
+
+/* Texto só para leitor de tela (título de página que não precisa aparecer) */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.passos {
+  margin: 8px 0 12px;
+  padding-left: 22px;
+}
+
+.passos li {
+  margin-bottom: 6px;
+}
+
+a {
+  color: var(--destaque);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

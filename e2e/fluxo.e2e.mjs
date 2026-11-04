@@ -1,19 +1,23 @@
 // Teste de navegador (Chromium de verdade) com o Firebase de mentira: o dia de trabalho do começo ao fim.
 // Para rodar: npm run e2e   (precisa de: npm install e npx playwright install chromium)
+/* global axe */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 import { modulos } from './firebase-falso.mjs';
 
 const raiz = fileURLToPath(new URL('..', import.meta.url));
+const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 const tipos = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
 
 let servidor;
 let navegador;
+let contexto;
 let pagina;
 let url;
 const erros = [];
@@ -34,7 +38,7 @@ before(async () => {
   url = `http://127.0.0.1:${servidor.address().port}/`;
 
   navegador = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-proxy-server'] } : {});
-  const contexto = await navegador.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
+  contexto = await navegador.newContext({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 } });
   pagina = await contexto.newPage();
   pagina.on('pageerror', (e) => erros.push(e.message));
   if (process.env.E2E_DEBUG) pagina.on('requestfailed', (r) => console.log('FALHOU', r.url(), r.failure().errorText));
@@ -50,10 +54,28 @@ after(async () => {
   servidor?.close();
 });
 
+// Acessibilidade: roda o axe (regras WCAG 2.1 A/AA e boas práticas) na tela atual e exige zero problemas
+async function semViolacoes(nome, p = pagina) {
+  await p.addScriptTag({ path: axePath });
+  const r = await p.evaluate(() =>
+    axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] })
+  );
+  assert.deepEqual(
+    r.violations.map((v) => `${v.id}: ${v.nodes[0].target.join(' ')}`),
+    [],
+    `problemas de acessibilidade em ${nome}`
+  );
+}
+
 const hoje = () => new Date().toLocaleDateString('en-CA'); // aaaa-mm-dd no horário do aparelho
 
 test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões', async () => {
   await pagina.goto(url + '#hoje');
+  // primeiro acesso: cartão de boas-vindas
+  await pagina.waitForSelector('text=Bem-vindo ao LucroNoKM');
+  await semViolacoes('Hoje (primeiro acesso)');
+  await pagina.click('[data-acao="dispensarBoasVindas"]');
+  assert.equal(await pagina.locator('text=Bem-vindo ao LucroNoKM').count(), 0);
   await pagina.fill('#odometro', '1000');
   await pagina.click('[data-acao="abrir"]');
   await pagina.waitForSelector('text=Dia aberto');
@@ -62,6 +84,8 @@ test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões'
   await pagina.fill('#valor', '12,50');
   await pagina.click('[data-acao="lancar"]');
   await pagina.waitForSelector('text=R$ 12,50');
+
+  await semViolacoes('dia aberto');
 
   // abastecimento dentro do dia aberto, sem campo de data
   assert.equal(await pagina.locator('#lugarAbastecer [data-f="data"]').count(), 0);
@@ -79,6 +103,7 @@ test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões'
   await pagina.click('[data-acao="fechar"]');
   await pagina.waitForSelector('text=Seu dinheiro do dia');
 
+  await semViolacoes('resultado do dia');
   const texto = await pagina.innerText('#conteudo');
   for (const t of ['Seu dinheiro do dia', 'Gastou no dia', 'Para guardar', 'Total gasto', 'Lucro líquido', 'Livre para gastar', 'Guardar (combustível, moto e custos fixos)']) {
     assert.ok(texto.includes(t), `faltou "${t}" no resultado do dia`);
@@ -91,6 +116,12 @@ test('o histórico mostra a meta da semana e o abastecimento do mês', async () 
   await pagina.click('#abas [data-aba="historico"]');
   await pagina.waitForSelector('text=Meta da semana');
   assert.ok((await pagina.innerText('#conteudo')).includes('Faturamento'));
+  await semViolacoes('histórico (semana)');
+  for (const modo of ['mes', 'ano']) {
+    await pagina.click(`[data-modo="${modo}"]`);
+    await pagina.waitForSelector(`[data-modo="${modo}"][aria-pressed="true"]`);
+    await semViolacoes(`histórico (${modo})`);
+  }
 
   await pagina.click('[data-modo="combustivel"]');
   await pagina.waitForSelector('text=Abastecimentos do mês');
@@ -98,6 +129,18 @@ test('o histórico mostra a meta da semana e o abastecimento do mês', async () 
   assert.ok(texto.includes('1040 km'));
   assert.ok(texto.includes('tanque cheio'));
   assert.ok(texto.includes(hoje().slice(8, 10)));
+  await semViolacoes('histórico (combustível)');
+});
+
+test('Ajustes e a política de privacidade não têm problemas de acessibilidade', async () => {
+  await pagina.click('#abas [data-aba="ajustes"]');
+  await pagina.waitForSelector('text=Seus dados e privacidade');
+  await semViolacoes('Ajustes');
+  const outra = await contexto.newPage();
+  await outra.goto(url + 'privacidade.html');
+  await outra.waitForSelector('text=Política de privacidade');
+  await semViolacoes('política de privacidade', outra);
+  await outra.close();
 });
 
 test('o histórico carrega só o ano da tela e busca o outro ano quando preciso', async () => {
@@ -143,4 +186,22 @@ test('nenhum erro de script durante o fluxo', async () => {
   }
   const guardados = await pagina.evaluate(() => localStorage.getItem('lucronokm.erros'));
   assert.equal(guardados, null);
+});
+
+test('apagar todos os meus dados esvazia a conta e volta ao primeiro acesso', async () => {
+  await pagina.click('#abas [data-aba="ajustes"]');
+  await pagina.waitForSelector('text=Seus dados e privacidade');
+  await pagina.click('[data-acao="pedirApagar"]');
+  await pagina.fill('#textoApagar', 'apagar');
+  await pagina.click('[data-acao="confirmarApagar"]');
+  await pagina.waitForSelector('text=Seus dados foram apagados');
+
+  const sobrou = await pagina.evaluate(() =>
+    [...window.__dadosFalsos.keys()].filter((c) => /\/(dias|abastecimentos|meses)\//.test(c))
+  );
+  assert.deepEqual(sobrou, []);
+
+  await pagina.click('#abas [data-aba="hoje"]');
+  await pagina.waitForSelector('text=Bem-vindo ao LucroNoKM');
+  assert.deepEqual(erros, []);
 });

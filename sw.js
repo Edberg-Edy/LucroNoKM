@@ -2,18 +2,18 @@
 // Os DADOS (dias, ajustes, abastecimentos) não passam por aqui: o próprio Firestore guarda offline.
 // Ao mudar qualquer arquivo do app, aumente o número da VERSAO para o celular baixar a versão nova.
 // O teste sw.test.js confere se todo arquivo do app está na lista abaixo (esquecer um deixa o app sem offline).
-const VERSAO = 'lucronokm-v27';
+const VERSAO = 'lucronokm-v28';
 
 const ARQUIVOS = [
-  './', './index.html', './manifest.webmanifest', './css/style.css',
+  './', './index.html', './privacidade.html', './manifest.webmanifest', './css/style.css',
   './js/app.js', './js/config/firebase-config.js', './js/config/padroes.js',
   './js/services/firebase.js', './js/services/dados.js', './js/services/dias.js', './js/services/meses.js',
-  './js/services/abastecimentos.js',
+  './js/services/abastecimentos.js', './js/services/conta.js',
   './js/modules/login.js', './js/modules/ajustes.js', './js/modules/calculos.js', './js/modules/formatos.js',
   './js/modules/hoje.js', './js/modules/resultado.js', './js/modules/semana.js', './js/modules/graficos.js',
   './js/modules/historico.js', './js/modules/mei.js', './js/modules/backup.js',
   './js/modules/mes.js', './js/modules/visaoMes.js',
-  './js/modules/visaoCombustivel.js', './js/modules/erros.js', './js/modules/gravacao.js',
+  './js/modules/visaoCombustivel.js', './js/modules/erros.js', './js/modules/boasvindas.js', './js/modules/gravacao.js',
   './js/modules/combustivel.js', './js/modules/fixos.js',
   './js/modules/lembretes.js', './js/modules/abastecer.js', './js/modules/sincronia.js', './js/modules/exportar.js', './js/modules/ano.js', './js/modules/visaoAno.js', './js/modules/sugestoes.js', './js/modules/validacao.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',

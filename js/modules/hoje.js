@@ -10,6 +10,7 @@ import { telaAbastecer } from './abastecer.js';
 import { odometroSugerido, conferirOdometroInicial } from './sugestoes.js';
 import { lembreteDAS, lembreteBackup } from './lembretes.js';
 import { ultimoBackup } from './backup.js';
+import { mostrarBoasVindas, boasVindasDispensado, dispensarBoasVindas, htmlBoasVindas } from './boasvindas.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
 
 const categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros'];
@@ -141,7 +142,9 @@ export async function telaHoje(raiz, usuario) {
 
   function desenharAbrir() {
     const sugerido = odometroSugerido({ dias: recentes, abastecimentos }); // o maior odômetro conhecido (último dia ou abastecimento)
+    const boasVindas = mostrarBoasVindas({ temDias: Boolean(primeiro), diaAberto: false, dispensado: boasVindasDispensado() });
     caixa.innerHTML = `
+      ${boasVindas ? htmlBoasVindas() : ''}
       <section class="cartao estreito">
         <h1>Abrir o dia</h1>
         <label>Data do dia
@@ -440,6 +443,12 @@ export async function telaHoje(raiz, usuario) {
       });
     } else if (botao.dataset.remover !== undefined) {
       gravarDespesas(dia.despesas.filter((_, i) => i !== Number(botao.dataset.remover)));
+    } else if (botao.dataset.acao === 'irAjustes') {
+      dispensarBoasVindas();
+      location.hash = 'ajustes';
+    } else if (botao.dataset.acao === 'dispensarBoasVindas') {
+      dispensarBoasVindas();
+      desenhar();
     } else if (botao.dataset.acao === 'abrir') abrir();
     else if (botao.dataset.acao === 'lancar') lancar();
     else if (botao.dataset.acao === 'fechar') fechar();

@@ -6,6 +6,7 @@ import { listarAbastecimentos, restaurarAbastecimentos } from '../services/abast
 import { listarMeses, salvarMes } from '../services/meses.js';
 import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcularDiaFechado } from './calculos.js';
 import { mesDe } from './mes.js';
+import { apagarTodosOsDados } from '../services/conta.js';
 import { lerErros, limparErros, textoDiagnostico } from './erros.js';
 import { montarBackup, baixarBackup, validarBackup, prepararRestauracao } from './backup.js';
 import { trechos, consumoMedio, consumoAproximado, kmL } from './combustivel.js';
@@ -244,6 +245,21 @@ export async function telaAjustes(caixa, usuario) {
       </section>
 
       <section class="cartao">
+        <h2>Seus dados e privacidade</h2>
+        <p class="suave">Seus dados ficam na sua conta e só você os acessa. <a href="privacidade.html" target="_blank" rel="noopener">Ler a política de privacidade</a>.</p>
+        <button type="button" class="botao secundario" data-acao="pedirApagar">Apagar todos os meus dados</button>
+        <div id="confirmarApagar" hidden>
+          <p class="erro">Isso apaga para sempre todos os seus dias, abastecimentos, fechamentos de mês e ajustes. Baixe um backup antes, se quiser guardar.</p>
+          <label>Para confirmar, digite APAGAR
+            <input type="text" id="textoApagar" autocomplete="off" autocapitalize="characters">
+          </label>
+          <button type="button" class="botao" data-acao="confirmarApagar">Apagar agora</button>
+          <button type="button" class="botao secundario" data-acao="cancelarApagar">Cancelar</button>
+        </div>
+        <p class="suave" id="statusApagar" role="status"></p>
+      </section>
+
+      <section class="cartao">
         <h2>Diagnóstico</h2>
         <p class="suave" id="statusDiagnostico" role="status">${resumoErros()}</p>
         <button type="button" class="botao secundario" data-acao="copiarDiagnostico">Copiar diagnóstico</button>
@@ -281,6 +297,29 @@ export async function telaAjustes(caixa, usuario) {
   function limparDiagnostico() {
     limparErros();
     caixa.querySelector('#statusDiagnostico').textContent = resumoErros();
+  }
+
+  async function apagarDados() {
+    const aviso = caixa.querySelector('#statusApagar');
+    if (caixa.querySelector('#textoApagar').value.trim().toUpperCase() !== 'APAGAR') {
+      aviso.textContent = 'Digite APAGAR para confirmar.';
+      return;
+    }
+    aviso.textContent = 'Apagando…';
+    try {
+      const r = await apagarTodosOsDados(usuario.uid);
+      try {
+        Object.keys(localStorage).filter((k) => k.startsWith('lucronokm.')).forEach((k) => localStorage.removeItem(k));
+      } catch (e) {
+        // sem localStorage: nada a limpar
+      }
+      caixa.querySelector('#confirmarApagar').hidden = true;
+      aviso.textContent = r.sincronizado
+        ? `Seus dados foram apagados (${r.total} registros).`
+        : `Seus dados foram apagados neste aparelho (${r.total} registros). Sem sinal: o servidor apaga quando a internet voltar.`;
+    } catch (e) {
+      aviso.textContent = 'Não foi possível apagar. Confira a internet e tente de novo.';
+    }
   }
 
   async function fazerBackup() {
@@ -471,6 +510,17 @@ export async function telaAjustes(caixa, usuario) {
     const botao = evento.target.closest('[data-acao]');
     if (!botao) return;
 
+    if (botao.dataset.acao === 'pedirApagar') {
+      caixa.querySelector('#confirmarApagar').hidden = false;
+      caixa.querySelector('#textoApagar').focus();
+      return;
+    }
+    if (botao.dataset.acao === 'cancelarApagar') {
+      caixa.querySelector('#confirmarApagar').hidden = true;
+      caixa.querySelector('#textoApagar').value = '';
+      return;
+    }
+    if (botao.dataset.acao === 'confirmarApagar') return apagarDados();
     if (botao.dataset.acao === 'copiarDiagnostico') return copiarDiagnostico();
     if (botao.dataset.acao === 'limparDiagnostico') return limparDiagnostico();
     if (botao.dataset.acao === 'backup') {

@@ -23,7 +23,7 @@ const versaoDe = (texto) => {
 };
 // Arquivos que o usuário recebe (e que o service worker guarda). Testes e documentos não contam.
 const ehDoApp = (caminho) =>
-  /^(index\.html|manifest\.webmanifest|css\/|js\/|assets\/)/.test(caminho) && !/\.test\.js$/.test(caminho);
+  /^(index\.html|privacidade\.html|manifest\.webmanifest|css\/|js\/|assets\/)/.test(caminho) && !/\.test\.js$/.test(caminho);
 
 test('a versão do cache sobe quando um arquivo do app muda', (t) => {
   if (git('rev-parse', '--is-inside-work-tree') === null) return t.skip('sem git: não deu para comparar');

@@ -38,6 +38,7 @@ export function htmlResultado(dia) {
     c.lucro < 0 ? ' O dia não cobriu os custos: parte do que você guardar vai sair do seu bolso.' : '';
 
   return `
+    <h1 class="so-leitor">Resultado do dia</h1>
     <div class="painel resultado-painel">
     <div class="col a">
     <section class="cartao resultado ${c.status}">

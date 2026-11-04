@@ -16,6 +16,7 @@ export function telaLogin(tela) {
       <p class="suave">Entre para guardar seus dias na nuvem e acessar de qualquer aparelho.</p>
       <button type="button" class="botao" id="entrar">Entrar com Google</button>
       <p class="erro" id="erro" role="alert"></p>
+      <p class="suave"><a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a></p>
     </section>`;
 
   const erro = tela.querySelector('#erro');

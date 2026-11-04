@@ -38,7 +38,7 @@ export const modulos = {
 
     const instantaneo = (caminho) => {
       const valor = dados.get(caminho);
-      return { id: caminho.split('/').pop(), exists: () => valor !== undefined, data: () => (valor === undefined ? undefined : copia(valor)) };
+      return { id: caminho.split('/').pop(), ref: { caminho, id: caminho.split('/').pop() }, exists: () => valor !== undefined, data: () => (valor === undefined ? undefined : copia(valor)) };
     };
     export const getDoc = async (ref) => instantaneo(ref.caminho);
     export const getDocFromCache = async (ref) => instantaneo(ref.caminho);

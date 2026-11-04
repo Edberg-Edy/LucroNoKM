@@ -96,7 +96,11 @@ menu.addEventListener('click', (evento) => {
   if (mesmaAba && botao.classList.contains('logo')) desenhar(); // já está no início: redesenha para voltar ao começo da aba
 });
 
-window.addEventListener('hashchange', desenhar);
+// Ao trocar de aba, leva o foco para o conteúdo (leitor de tela e teclado começam do topo da aba nova)
+window.addEventListener('hashchange', () => {
+  desenhar();
+  tela.focus({ preventScroll: true });
+});
 
 // O Firebase avisa quando o app abre (já logado ou não) e a cada entrada ou saída.
 observarLogin((u) => {

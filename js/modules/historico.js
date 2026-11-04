@@ -121,7 +121,7 @@ export async function telaHistorico(caixa, usuario) {
               : `Atenção: você já usou ${Math.round(m.percentual)}% do limite do MEI em ${anoAtual}. Restam ${dinheiro(m.restante)}.` +
                 (m.projecao ? ` No ritmo atual o ano fecha perto de ${dinheiro(m.projecao)}${m.projecao > config.limiteMei ? ', acima do limite' : ''}.` : '')
           } Conta só o que foi lançado no app.</p>`;
-    const avisoHtml = avisoMei + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
+    const avisoHtml = '<h1 class="so-leitor">Histórico</h1>' + avisoMei + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
     const seletor = `<div class="modo" role="group" aria-label="Período">
       <button type="button" data-modo="semana" aria-pressed="${modo === 'semana'}">Semana</button>
       <button type="button" data-modo="mes" aria-pressed="${modo === 'mes'}">Mês</button>
