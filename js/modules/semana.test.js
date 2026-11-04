@@ -1,7 +1,7 @@
 // Testes do histórico semanal. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao } from './semana.js';
+import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao, diasPorSemana, metaDaSemana } from './semana.js';
 
 // Cria um dia fechado de exemplo
 const dia = (data, lucro, gastos, plataformas = [{ nome: 'iFood', valor: 100, corridas: 4 }]) => ({
@@ -85,4 +85,37 @@ test('variação entre semanas', () => {
   assert.equal(variacao(150, 100), 50);
   assert.equal(variacao(50, 100), -50);
   assert.equal(variacao(10, 0), null);
+});
+test('dias por semana vêm dos dias por mês do ajuste', () => {
+  assert.equal(diasPorSemana(26), 6);
+  assert.equal(diasPorSemana(20), 5);
+  assert.equal(diasPorSemana(13), 3);
+  assert.equal(diasPorSemana(30), 7);
+});
+
+test('meta da semana = meta diária × dias de trabalho, com ritmo na semana atual', () => {
+  const datas = datasDaSemana('2026-11-02'); // segunda 02/11
+  const m = metaDaSemana({ lucro: 150, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: true });
+  assert.equal(m.meta, 1500);
+  assert.equal(m.falta, 1350);
+  assert.equal(Math.round(m.percentual), 10);
+  assert.equal(m.diasRestantes, 4); // 5 dias de calendário × 6/7
+  assert.equal(m.porDia, 1350 / 4);
+  assert.equal(m.atingiu, false);
+});
+
+test('semana passada só mostra o resultado, e meta batida mostra a sobra', () => {
+  const datas = datasDaSemana('2026-10-26');
+  const m = metaDaSemana({ lucro: 1200, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: false });
+  assert.equal(m.semanaAtual, false);
+  assert.equal(m.porDia, null);
+  const b = metaDaSemana({ lucro: 1600, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: false });
+  assert.equal(b.atingiu, true);
+  assert.equal(b.sobra, 100);
+  assert.equal(b.percentual, 100);
+});
+
+test('sem meta ou sem dias por mês não há cartão', () => {
+  const datas = datasDaSemana('2026-11-02');
+  assert.equal(metaDaSemana({ lucro: 0, meta: 0, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: false }), null);
 });

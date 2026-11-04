@@ -7,9 +7,9 @@ import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
 import { resumoDoAno } from './ano.js';
 import { htmlAno } from './visaoAno.js';
-import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao } from './semana.js';
+import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao, metaDaSemana } from './semana.js';
 import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from './mes.js';
-import { htmlMes, htmlCombustivelSemana } from './visaoMes.js';
+import { htmlMes, htmlCombustivelSemana, htmlMetaSemana } from './visaoMes.js';
 import { painelDoMes, combustivelDoPeriodo } from './combustivel.js';
 import { acertoDosFixos, totalFixos } from './fixos.js';
 import { htmlGraficoLucro, htmlGraficoGastos, maiorValor } from './graficos.js';
@@ -180,11 +180,16 @@ export async function telaHistorico(caixa, usuario) {
         <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
       </section>
       ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}
-      ${
-        t.diasTrabalhados
-          ? `<p class="suave aviso">Separe ${dinheiro(t.guardar)} desta semana (manutenção e custos fixos). Os ${dinheiro(t.lucro)} restantes são o que você pode gastar.</p>`
-          : ''
-      }
+      ${htmlMetaSemana(
+        metaDaSemana({
+          lucro: t.lucro,
+          meta: config.meta,
+          diasPorMes: config.diasPorMes,
+          datas,
+          hoje: hojeISO(),
+          hojeFechado: dias.some((d) => d.data === hojeISO()),
+        })
+      )}
 
       ${
         semana.plataformas.length

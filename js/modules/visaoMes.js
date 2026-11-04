@@ -44,6 +44,31 @@ function htmlProgresso(p, media) {
     </section>`;
 }
 
+// Cartão "Meta da semana" (resultado de metaDaSemana), no mesmo estilo do limite do MEI e das contas do mês.
+export function htmlMetaSemana(m) {
+  if (!m) return '';
+  const pl = (n) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
+  let texto;
+  if (m.atingiu) {
+    texto = `Meta da semana batida.${m.sobra > 0 ? ` Sobraram ${dinheiro(m.sobra)}.` : ''}`;
+  } else if (m.semanaAtual && m.porDia !== null) {
+    texto = `Faltam ${dinheiro(m.falta)}. Com cerca de ${pl(m.diasRestantes)} de trabalho até domingo, são ${dinheiro(m.porDia)} de lucro por dia.`;
+  } else if (m.semanaAtual) {
+    texto = `Faltam ${dinheiro(m.falta)} e não restam dias de trabalho nesta semana.`;
+  } else {
+    texto = `Esta semana fechou em ${Math.round(m.percentual)}% da meta: faltaram ${dinheiro(m.falta)}.`;
+  }
+  return `
+      <section class="cartao">
+        <h2>Meta da semana</h2>
+        ${linha('Meta (' + pl(m.dias) + ' de trabalho)', dinheiro(m.meta))}
+        ${linha(m.semanaAtual ? 'Lucro da semana até agora' : 'Lucro da semana', dinheiro(m.lucro))}
+        ${linha(m.atingiu ? 'Sobra' : 'Falta', dinheiro(m.atingiu ? m.sobra : m.falta), 'total')}
+        <div class="medidor" role="img" aria-label="${Math.round(m.percentual)}% da meta da semana"><i style="width:${m.percentual}%"></i></div>
+        <p class="suave">${texto}</p>
+      </section>`;
+}
+
 // Card de combustível da semana (resultado de combustivelDoPeriodo). Mesmo estilo dos indicadores.
 export function htmlCombustivelSemana(c) {
   const real = c.real;

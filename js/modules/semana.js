@@ -78,3 +78,38 @@ export function rankingPlataformas(dias) {
   );
   return Object.values(mapa).sort((a, b) => b.valor - a.valor);
 }
+// Dias de trabalho por semana, tirados do ajuste "Dias trabalhados por mês" (26 dias ≈ 6 por semana; 20 ≈ 5).
+export const diasPorSemana = (diasPorMes) => Math.min(7, Math.max(1, Math.round((diasPorMes * 7) / 30.44)));
+
+// Meta da semana = meta diária × dias de trabalho por semana. Compara com o lucro já feito.
+//   datas = as 7 datas da semana na tela; hoje = data de hoje; hojeFechado = o dia de hoje já foi lançado?
+// Só na semana atual estima quantos dias de trabalho ainda restam e quanto de lucro por dia falta.
+export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado }) {
+  if (!(meta > 0) || !(diasPorMes > 0)) return null;
+
+  const dias = diasPorSemana(diasPorMes);
+  const total = meta * dias;
+  const falta = Math.max(0, total - lucro);
+  const indice = datas.indexOf(hoje);
+  const semanaAtual = indice >= 0;
+
+  let diasRestantes = 0;
+  if (semanaAtual) {
+    const corridos = 7 - indice - (hojeFechado ? 1 : 0); // dias do calendário que ainda restam
+    const estimados = Math.round((corridos * dias) / 7);
+    diasRestantes = corridos > 0 ? Math.max(hojeFechado ? 0 : 1, estimados) : 0;
+  }
+
+  return {
+    dias,
+    meta: total,
+    lucro,
+    falta,
+    sobra: Math.max(0, lucro - total),
+    percentual: Math.min(100, Math.max(0, (lucro / total) * 100)),
+    atingiu: lucro >= total,
+    semanaAtual,
+    diasRestantes,
+    porDia: semanaAtual && falta > 0 && diasRestantes > 0 ? falta / diasRestantes : null,
+  };
+}
