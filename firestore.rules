@@ -1,10 +1,72 @@
 rules_version = '2';
 
-// Regras do LucroNoKM: cada usuário só lê e grava os dados que estão dentro da própria conta.
+// Regras do LucroNoKM.
+// 1) Cada usuário só lê e grava o que está dentro da própria conta (users/{uid}/...).
+// 2) Só as coleções que o app usa são liberadas: config, dias, meses e abastecimentos. Qualquer outra é negada.
+// 3) Os campos principais precisam ter o tipo e o tamanho certos, para um dado quebrado (ou um script malicioso
+//    com a sessão do usuário) não encher a conta nem estragar o histórico. Campos opcionais podem faltar.
+// Estas regras são testadas no GitHub Actions (regras/verificar-regras.mjs) com documentos reais gerados pelo app.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function dono(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function dataIso(v) {
+      return v is string && v.size() == 10;
+    }
+    function numero(v) {
+      return v is number && v > -1000000000 && v < 1000000000;
+    }
+    function opcional(d, campo) {
+      return !(campo in d) || d[campo] == null;
+    }
+
+    function diaValido(d) {
+      return d.keys().size() <= 40
+        && dataIso(d.data)
+        && (opcional(d, 'aberto') || d.aberto is bool)
+        && (opcional(d, 'odometroInicial') || numero(d.odometroInicial))
+        && (opcional(d, 'odometroFinal') || numero(d.odometroFinal))
+        && (opcional(d, 'despesas') || (d.despesas is list && d.despesas.size() <= 300))
+        && (opcional(d, 'plataformas') || (d.plataformas is list && d.plataformas.size() <= 30));
+    }
+
+    function abastecimentoValido(d) {
+      return d.keys().size() <= 15
+        && dataIso(d.data)
+        && d.litros is number && d.litros > 0 && d.litros <= 200
+        && (opcional(d, 'odometro') || (d.odometro is number && d.odometro >= 0 && d.odometro < 10000000))
+        && (opcional(d, 'cheio') || d.cheio is bool)
+        && (opcional(d, 'valor') || (d.valor is number && d.valor >= 0 && d.valor <= 100000));
+    }
+
+    function mesValido(d) {
+      return d.keys().size() <= 20
+        && (opcional(d, 'fechado') || d.fechado is bool)
+        && (opcional(d, 'observacao') || (d.observacao is string && d.observacao.size() <= 2000))
+        && (opcional(d, 'checklist') || d.checklist is map)
+        && (opcional(d, 'totais') || d.totais is map);
+    }
+
+    match /users/{uid}/config/{id} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid) && request.resource.data.keys().size() <= 40;
+    }
+
+    match /users/{uid}/dias/{id} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid) && diaValido(request.resource.data);
+    }
+
+    match /users/{uid}/abastecimentos/{id} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid) && abastecimentoValido(request.resource.data);
+    }
+
+    match /users/{uid}/meses/{id} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid) && mesValido(request.resource.data);
     }
   }
 }

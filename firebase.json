@@ -4,7 +4,7 @@
     "public": ".",
     "ignore": [
       "firebase.json", "**/.*", "**/node_modules/**", "docs/**", "package.json", "package-lock.json",
-      "firestore.rules", "README.md", "PROJETO_STATUS.md", "**/*.test.js"
+      "firestore.rules", "regras/**", "e2e/**", "eslint.config.js", "README.md", "PROJETO_STATUS.md", "**/*.test.js"
     ],
     "headers": [
       { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

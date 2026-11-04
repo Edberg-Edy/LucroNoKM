@@ -1,0 +1,121 @@
+[
+  [
+    "users/u-e2e/config/main",
+    {
+      "meta": 200,
+      "kmPorLitro": 35,
+      "precoLitro": 6.2,
+      "diasPorMes": 24,
+      "limiteMei": 81000,
+      "contasMes": 0,
+      "plataformas": [
+        "iFood",
+        "Rappi",
+        "99",
+        "Loggi",
+        "Particular"
+      ],
+      "manutencao": [
+        {
+          "item": "Óleo e filtro",
+          "preco": 50,
+          "duracaoKm": 1000
+        },
+        {
+          "item": "Pneu traseiro",
+          "preco": 250,
+          "duracaoKm": 10000
+        },
+        {
+          "item": "Pneu dianteiro",
+          "preco": 200,
+          "duracaoKm": 15000
+        },
+        {
+          "item": "Kit relação",
+          "preco": 250,
+          "duracaoKm": 20000
+        },
+        {
+          "item": "Freios",
+          "preco": 100,
+          "duracaoKm": 10000
+        },
+        {
+          "item": "Revisões e imprevistos",
+          "preco": 600,
+          "duracaoKm": 10000
+        }
+      ],
+      "fixos": [
+        {
+          "item": "Internet e celular (uso no trabalho)",
+          "valorMensal": 60
+        },
+        {
+          "item": "DAS-MEI",
+          "valorMensal": 86.05
+        }
+      ]
+    }
+  ],
+  [
+    "users/u-e2e/dias/auto15oax",
+    {
+      "aberto": false,
+      "data": "2026-11-04",
+      "odometroInicial": 1000,
+      "despesas": [
+        {
+          "categoria": "Comida",
+          "valor": 12.5
+        }
+      ],
+      "plataformas": [
+        {
+          "nome": "iFood",
+          "valor": 180,
+          "corridas": 9
+        }
+      ],
+      "criadoEm": 1793794656052,
+      "odometroFinal": 1100,
+      "horas": 8,
+      "snapshot": {
+        "meta": 200,
+        "kmPorLitro": 35,
+        "precoLitro": 6.2,
+        "manutencaoPorKm": 0.171,
+        "fixoPorDia": 6.085416666666667
+      },
+      "calculados": {
+        "km": 100,
+        "faturamento": 180,
+        "combustivel": 17.714285714285715,
+        "manutencao": 17.1,
+        "despesas": 12.5,
+        "fixos": 6.085416666666667,
+        "gastos": 53.399702380952384,
+        "lucro": 126.60029761904761,
+        "guardar": 23.18541666666667,
+        "livre": 126.60029761904761,
+        "ganhoPorKm": 1.8,
+        "lucroPorHora": 15.825037202380951,
+        "corridas": 9,
+        "ganhoPorCorrida": 20,
+        "status": "amarelo"
+      },
+      "fechadoEm": 1793794656567
+    }
+  ],
+  [
+    "users/u-e2e/abastecimentos/auto2ms3h",
+    {
+      "data": "2026-11-04",
+      "odometro": 1040,
+      "litros": 5,
+      "cheio": true,
+      "criadoEm": 1793794656431
+    }
+  ]
+]

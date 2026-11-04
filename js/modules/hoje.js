@@ -1,6 +1,6 @@
 // Aba Hoje. Abrir o dia (data + odômetro), lançar despesas e fechar o dia com o resultado.
 // Também serve para editar um dia já fechado (o Histórico reabre o dia e manda para cá).
-import { buscarDiaAberto, criarDia, atualizarDia, excluirDia, fecharDia, listarDiasFechados, ultimosDias, primeiroDia } from '../services/dias.js';
+import { buscarDiaAberto, criarDia, atualizarDia, excluirDia, fecharDia, diasFechadosNaData, ultimosDias, primeiroDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
 import { mesEstaFechado, listarMeses } from '../services/meses.js';
 import { calcularDia, parametrosDoDia, lerHoras } from './calculos.js';
@@ -334,7 +334,7 @@ export async function telaHoje(raiz, usuario) {
           if (await mesEstaFechado(usuario.uid, data.slice(0, 7))) {
             return erro('O mês dessa data está fechado. Reabra o mês no Histórico para mover o dia para lá.');
           }
-          const repetido = (await listarDiasFechados(usuario.uid)).some((d) => d.data === data && d.id !== dia.id);
+          const repetido = (await diasFechadosNaData(usuario.uid, data)).some((d) => d.id !== dia.id);
           if (repetido && confirmarDataRepetida !== data) {
             confirmarDataRepetida = data;
             return erro(`Já existe um dia fechado em ${dataBR(data)}. Toque em Salvar de novo para manter os dois.`);

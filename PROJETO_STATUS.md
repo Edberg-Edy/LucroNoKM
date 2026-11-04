@@ -32,13 +32,14 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
 | 18 | Abastecimento como registro próprio na bomba (sem valor), consumo aproximado e card na aba Hoje | ✅ v0.18 |
 | 19 | Dia em três cartões: dinheiro do dia (plataformas), gastou no dia (combustível, despesas, manutenção, fixos) e para guardar (inclui combustível) | ✅ v0.19 |
+| 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |
 | 25 | Abastecimento dentro do dia aberto (abaixo das despesas, sem data nem texto); logo da barra clicável leva ao início | ✅ v0.25 |
 | 24 | Histórico > Combustível: lista completa dos abastecimentos por mês (trava com o mês fechado); aba Hoje mostra só o último | ✅ v0.24 |
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **185 testes** passando (`npm test`) + 4 de navegador (`npm run e2e`) + lint (`npm run lint`), service worker `lucronokm-v26`.
+Estado atual: **185 testes** passando (`npm test`) + 5 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v27`.
 
 ## Decisões recentes
 

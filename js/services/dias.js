@@ -60,6 +60,19 @@ export async function listarDiasFechados(uid) {
   return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() }));
 }
 
+// Lê só os dias fechados de um ano (aaaa). O histórico carrega por ano: quem usa há anos não baixa tudo de uma vez.
+// Duas condições no mesmo campo (data) não precisam de índice no Firestore; o filtro "fechado" é feito aqui.
+export async function listarDiasFechadosDoAno(uid, ano) {
+  const resultado = await getDocs(query(colecao(uid), where('data', '>=', `${ano}-01-01`), where('data', '<=', `${ano}-12-31`)));
+  return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() })).filter((d) => d.aberto === false);
+}
+
+// Já existe algum dia fechado nesta data? (usado para avisar de data repetida ao editar um dia)
+export async function diasFechadosNaData(uid, data) {
+  const resultado = await getDocs(query(colecao(uid), where('data', '==', data)));
+  return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() })).filter((d) => d.aberto === false);
+}
+
 // Os "n" dias mais recentes (abertos ou fechados), do mais novo para o mais antigo.
 // Lê só "n" documentos: serve para sugerir o odômetro sem ler o histórico inteiro.
 export async function ultimosDias(uid, n) {

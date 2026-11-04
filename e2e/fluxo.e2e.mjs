@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -100,6 +100,32 @@ test('o histórico mostra a meta da semana e o abastecimento do mês', async () 
   assert.ok(texto.includes(hoje().slice(8, 10)));
 });
 
+test('o histórico carrega só o ano da tela e busca o outro ano quando preciso', async () => {
+  // Cria um dia fechado em outro ano, copiando o formato real de um dia que o app gravou
+  const ano = String(Number(hoje().slice(0, 4)) - 1);
+  await pagina.evaluate((anoAnterior) => {
+    const [caminho, dia] = [...window.__dadosFalsos].find(([c, d]) => c.includes('/dias/') && d.aberto === false);
+    window.__dadosFalsos.set(caminho.replace(/[^/]+$/, 'dia-do-ano-passado'), { ...dia, data: `${anoAnterior}-06-15` });
+  }, ano);
+
+  await pagina.click('#abas [data-aba="ajustes"]');
+  await pagina.waitForSelector('text=Diagnóstico');
+  await pagina.evaluate(() => { window.__consultas = []; });
+  await pagina.click('#abas [data-aba="historico"]');
+  await pagina.waitForSelector('text=Meta da semana');
+
+  const consultas = await pagina.evaluate(() => window.__consultas);
+  assert.ok(consultas.some((c) => c.includes(`${hoje().slice(0, 4)}-01-01`)), 'deveria buscar o ano de hoje');
+  assert.ok(!consultas.some((c) => c.includes(`${ano}-01-01`)), 'não deveria buscar o ano passado ainda');
+
+  await pagina.click('[data-modo="ano"]');
+  await pagina.click('[data-ano="anterior"]');
+  await pagina.waitForSelector(`text=${ano}`);
+  const depois = await pagina.evaluate(() => window.__consultas);
+  assert.ok(depois.some((c) => c.includes(`${ano}-01-01`)), 'deveria buscar o ano passado ao navegar');
+  assert.match(await pagina.innerText('#conteudo'), /180,00/);
+});
+
 test('o logo da barra leva para o início', async () => {
   await pagina.click('#abas [data-aba="ajustes"]');
   await pagina.waitForSelector('text=Diagnóstico');
@@ -110,6 +136,11 @@ test('o logo da barra leva para o início', async () => {
 
 test('nenhum erro de script durante o fluxo', async () => {
   assert.deepEqual(erros, []);
+  // Com E2E_SALVAR_DOCS=1, guarda os documentos que o app gravou: eles alimentam o teste das regras do Firestore (regras/)
+  if (process.env.E2E_SALVAR_DOCS) {
+    const docs = await pagina.evaluate(() => [...window.__dadosFalsos].filter(([c]) => !c.endsWith('dia-do-ano-passado')));
+    await writeFile(join(raiz, 'regras', 'documentos-reais.json'), JSON.stringify(docs, null, 2) + '\n');
+  }
   const guardados = await pagina.evaluate(() => localStorage.getItem('lucronokm.erros'));
   assert.equal(guardados, null);
 });

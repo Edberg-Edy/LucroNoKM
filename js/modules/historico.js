@@ -1,5 +1,5 @@
 // Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI) e visão do mês (fechamento mensal).
-import { listarDiasFechados, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
+import { listarDiasFechadosDoAno, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
@@ -24,14 +24,14 @@ const selo = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
 export async function telaHistorico(caixa, usuario) {
   caixa.innerHTML = '<p class="suave">Carregando histórico…</p>';
 
-  let dias;
+  let dias; // só os anos já carregados (veja garantirDaTela)
   let config;
   let meses; // meses já gravados (fechamento e checklist), por 'aaaa-mm'
   let diaAberto; // dia que está aberto ou em edição (não entra nos totais até ser salvo), ou null
   let abastecimentos; // abastecimentos de combustível (se não carregarem, o resto do histórico continua funcionando)
   try {
     [dias, config, meses, diaAberto, abastecimentos] = await Promise.all([
-      listarDiasFechados(usuario.uid),
+      listarDiasFechadosDoAno(usuario.uid, hojeISO().slice(0, 4)),
       carregarConfig(usuario.uid),
       listarMeses(usuario.uid),
       buscarDiaAberto(usuario.uid),
@@ -60,6 +60,37 @@ export async function telaHistorico(caixa, usuario) {
   let apagandoAb = null; // abastecimento que aguarda o segundo toque em ✕
   let anoTela = hojeISO().slice(0, 4); // ano que está na tela (visão do ano)
   let ym = mesDe(hojeISO()); // mês que está na tela (aaaa-mm)
+
+  // O histórico carrega por ano (começa pelo ano de hoje). Ao navegar para um período de outro ano, busca esse ano na hora.
+  const anosCarregados = new Set([hojeISO().slice(0, 4)]);
+  const anosDaTela = () => {
+    if (modo === 'ano') return [anoTela];
+    if (modo === 'mes') return [ym.slice(0, 4), somarMeses(ym, -1).slice(0, 4)]; // o mês anterior entra na comparação
+    if (modo === 'semana') return [inicio, somarDias(inicio, 6), somarDias(inicio, -7)].map((d) => d.slice(0, 4));
+    return [];
+  };
+  async function garantirDaTela() {
+    const faltam = [...new Set(anosDaTela())].filter((a) => !anosCarregados.has(a));
+    if (!faltam.length) return true;
+    try {
+      const listas = await Promise.all(faltam.map((a) => listarDiasFechadosDoAno(usuario.uid, a)));
+      dias = dias.concat(...listas);
+      faltam.forEach((a) => anosCarregados.add(a));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  // Muda o período na tela; se o ano novo não carregar (sem internet), volta para onde estava em vez de mostrar zeros falsos.
+  async function navegar(mudar) {
+    const antes = { modo, ym, anoTela, inicio, selecionado };
+    mudar();
+    if (!(await garantirDaTela())) {
+      ({ modo, ym, anoTela, inicio, selecionado } = antes);
+      aviso = 'Não foi possível carregar esse período. Confira a internet e tente de novo.';
+    }
+    desenhar();
+  }
 
   // Dia de um mês fechado fica travado: não pode ser editado nem excluído.
   const travado = (d) => meses[mesDe(d.data)]?.fechado === true;
@@ -406,17 +437,20 @@ export async function telaHistorico(caixa, usuario) {
     aviso = '';
 
     if (botao.dataset.modo) {
-      modo = botao.dataset.modo;
-      selecionado = null;
-      return desenhar();
+      return navegar(() => {
+        modo = botao.dataset.modo;
+        selecionado = null;
+      });
     }
     if (botao.dataset.mes) {
-      ym = somarMeses(ym, botao.dataset.mes === 'anterior' ? -1 : 1);
-      return desenhar();
+      return navegar(() => {
+        ym = somarMeses(ym, botao.dataset.mes === 'anterior' ? -1 : 1);
+      });
     }
     if (botao.dataset.ano) {
-      anoTela = String(Number(anoTela) + (botao.dataset.ano === 'anterior' ? -1 : 1));
-      return desenhar();
+      return navegar(() => {
+        anoTela = String(Number(anoTela) + (botao.dataset.ano === 'anterior' ? -1 : 1));
+      });
     }
     if (botao.dataset.acao === 'csvAno') {
       baixarCSV(anoTela, csvDoAno(dias, anoTela));
@@ -448,12 +482,11 @@ export async function telaHistorico(caixa, usuario) {
     if (botao.dataset.editar) return editar(botao.dataset.editar);
     if (botao.dataset.excluir) return excluir(botao.dataset.excluir);
 
-    if (botao.dataset.semana === 'anterior') {
-      inicio = somarDias(inicio, -7);
-      selecionado = null;
-    } else if (botao.dataset.semana === 'proxima') {
-      inicio = somarDias(inicio, 7);
-      selecionado = null;
+    if (botao.dataset.semana) {
+      return navegar(() => {
+        inicio = somarDias(inicio, botao.dataset.semana === 'anterior' ? -7 : 7);
+        selecionado = null;
+      });
     } else if (botao.dataset.dia) {
       selecionado = selecionado === botao.dataset.dia ? null : botao.dataset.dia;
     } else if (botao.dataset.ver) {
@@ -465,5 +498,6 @@ export async function telaHistorico(caixa, usuario) {
     desenhar();
   });
 
+  await garantirDaTela(); // a semana de hoje pode começar no ano anterior
   desenhar();
 }

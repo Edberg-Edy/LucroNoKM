@@ -50,6 +50,7 @@ export const modulos = {
 
     const testa = (v, op, alvo) => ({ '==': v === alvo, '>=': v >= alvo, '<=': v <= alvo, '>': v > alvo, '<': v < alvo })[op];
     export const getDocs = async (consulta) => {
+      (window.__consultas = window.__consultas || []).push(JSON.stringify((consulta.restricoes || []).filter((r) => r.tipo === 'where')));
       const prefixo = consulta.caminho + '/';
       let itens = [...dados.keys()].filter((c) => c.startsWith(prefixo) && !c.slice(prefixo.length).includes('/'));
       for (const r of consulta.restricoes || []) {

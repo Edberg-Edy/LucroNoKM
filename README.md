@@ -114,6 +114,7 @@ Verificações (rodam também no GitHub Actions a cada push):
 
 - `npm test`: testes das contas e telas (executor nativo do Node), inclusive a guarda que exige subir a versão do cache quando um arquivo do app muda
 - `npm run lint`: verificador de código (ESLint)
+- `npm run regras`: testa o `firestore.rules` num emulador (precisa de Java), com documentos reais gerados pelo app. **Depois de mudar as regras, só publique no console do Firebase com esse teste verde.**
 - `npm run e2e`: teste de navegador com Chromium e um Firebase de mentira (precisa de `npm install` e `npx playwright install chromium` uma vez)
 
 Rodar os testes:
