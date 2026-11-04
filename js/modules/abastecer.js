@@ -25,8 +25,11 @@ const guardarCheio = (cheio) => {
 const MOSTRAR = 1; // aqui aparece só o último; a lista completa fica no Histórico > Combustível
 
 // "caixa" é o espaço da tela onde o card aparece; "usuario" é quem está logado.
-export async function telaAbastecer(caixa, usuario) {
-  caixa.innerHTML = '<section class="cartao estreito"><h2>Abastecimento</h2><p class="suave">Carregando…</p></section>';
+// opcoes.data = função que devolve a data do dia aberto: com ela o card não pede data (vale a do dia).
+// opcoes.aoMudar = chamada quando o card entra ou sai do modo de edição (a aba Hoje decide onde ele aparece).
+export async function telaAbastecer(caixa, usuario, opcoes = {}) {
+  const dataNova = () => (opcoes.data && opcoes.data()) || hojeISO();
+  caixa.innerHTML = '<section class="cartao"><h2>Abastecimento</h2><p class="suave">Carregando…</p></section>';
 
   let lista;
   let recentes = [];
@@ -38,7 +41,7 @@ export async function telaAbastecer(caixa, usuario) {
       buscarDiaAberto(usuario.uid).catch(() => null),
     ]);
   } catch (e) {
-    caixa.innerHTML = `<section class="cartao estreito"><h2>Abastecimento</h2>
+    caixa.innerHTML = `<section class="cartao"><h2>Abastecimento</h2>
       <p class="erro">Não foi possível carregar os abastecimentos (${esc(e.code || 'erro')}). Confira a internet.</p></section>`;
     return;
   }
@@ -47,7 +50,7 @@ export async function telaAbastecer(caixa, usuario) {
   let confirmarExcluir = null; // id que aguarda o segundo toque em ✕
   let mensagem = '';
   let mensagemErro = false; // a mensagem é um erro (aparece em vermelho)
-  let rascunho = { data: hojeISO(), odometro: '', litros: '', cheio: lerCheioSalvo() };
+  let rascunho = { data: dataNova(), odometro: '', litros: '', cheio: lerCheioSalvo() };
 
   const ultimoOdometro = () => odometroSugerido({ dias: recentes, abastecimentos: lista, diaAberto: aberto });
 
@@ -68,12 +71,15 @@ export async function telaAbastecer(caixa, usuario) {
     const ultimo = ultimoOdometro();
     const recentesDaLista = ordenar(lista).slice(-MOSTRAR).reverse();
     caixa.innerHTML = `
-      <section class="cartao estreito">
+      <section class="cartao">
         <h2>${editandoId ? 'Editar abastecimento' : 'Abastecimento'}</h2>
-        <p class="suave">Registre na bomba, assim que abastecer. Vale qualquer horário e qualquer posto.</p>
-        <label>Data
+        ${
+          editandoId || !opcoes.data
+            ? `<label>Data
           <input type="date" data-f="data" value="${esc(rascunho.data)}" max="${hojeISO()}">
-        </label>
+        </label>`
+            : ''
+        }
         <label>Odômetro agora (km)
           <input type="text" inputmode="decimal" data-f="odometro" value="${esc(rascunho.odometro)}" placeholder="${ultimo ? 'Último conhecido: ' + ultimo : 'Ex.: 1850'}">
         </label>
@@ -88,9 +94,12 @@ export async function telaAbastecer(caixa, usuario) {
         ${recentesDaLista.length ? `<h2>Último abastecimento</h2>${recentesDaLista.map(linhaDaLista).join('')}` : ''}
         ${lista.length ? '<button type="button" class="botao secundario" data-acao="verTodos">Ver todos os abastecimentos</button>' : ''}
       </section>`;
+    caixa.dataset.editando = editandoId ? '1' : '';
+    if (opcoes.aoMudar) opcoes.aoMudar();
   }
 
   async function registrar() {
+    if (!editandoId) rascunho.data = dataNova(); // abastecimento novo vale na data do dia aberto
     const conferido = validarAbastecimento(rascunho, lista, { hoje: hojeISO(), editandoId, dias: recentes });
     if (!conferido.ok) {
       mensagem = conferido.erro;
@@ -110,7 +119,7 @@ export async function telaAbastecer(caixa, usuario) {
         mensagem = gravado.sincronizado ? 'Abastecimento registrado.' : 'Abastecimento registrado (será enviado quando o sinal voltar).';
       }
       editandoId = null;
-      rascunho = { data: hojeISO(), odometro: '', litros: '', cheio: rascunho.cheio };
+      rascunho = { data: dataNova(), odometro: '', litros: '', cheio: rascunho.cheio };
     } catch (e) {
       mensagem = 'Não foi possível salvar. Confira a internet e tente de novo.';
       mensagemErro = true;
@@ -135,7 +144,7 @@ export async function telaAbastecer(caixa, usuario) {
       lista = lista.filter((a) => a.id !== id);
       if (editandoId === id) {
         editandoId = null;
-        rascunho = { data: hojeISO(), odometro: '', litros: '', cheio: rascunho.cheio };
+        rascunho = { data: dataNova(), odometro: '', litros: '', cheio: rascunho.cheio };
       }
       mensagem = 'Abastecimento excluído.';
       mensagemErro = false;
@@ -185,7 +194,7 @@ export async function telaAbastecer(caixa, usuario) {
       editandoId = null;
       mensagem = '';
       mensagemErro = false;
-      rascunho = { data: hojeISO(), odometro: '', litros: '', cheio: rascunho.cheio };
+      rascunho = { data: dataNova(), odometro: '', litros: '', cheio: rascunho.cheio };
       return desenhar();
     }
     if (botao.dataset.editar) return editar(botao.dataset.editar);

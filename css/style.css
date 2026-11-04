@@ -74,7 +74,11 @@ h1 {
   border-top: 1px solid var(--borda);
 }
 
-#abas button {
+#abas .logo {
+  display: none; /* no celular a barra de baixo fica só com as abas */
+}
+
+#abas button:not(.logo) {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -605,20 +609,25 @@ input {
     border-bottom: 1px solid var(--borda);
   }
 
-  #abas::before {
-    content: "LucroNoKM";
+  #abas button.logo {
     display: flex;
+    flex: none;
+    flex-direction: row;
     align-items: center;
     min-height: 32px;
-    padding-left: 42px; /* espaço para o logo (imagem de fundo) à esquerda do nome */
+    padding: 0 0 0 42px; /* espaço para o logo (imagem de fundo) à esquerda do nome */
     margin-right: 24px;
     background: url("../assets/icons/icon-192.png") no-repeat left center / 32px 32px;
+    border: 0;
     border-radius: 8px;
+    color: var(--texto);
+    font: inherit;
     font-size: 20px;
     font-weight: 900;
+    cursor: pointer;
   }
 
-  #abas button {
+  #abas button:not(.logo) {
     flex: none;
     flex-direction: row;
     gap: 8px;
@@ -627,7 +636,7 @@ input {
     font-size: 15px;
   }
 
-  #abas button:hover:not([aria-current="page"]) {
+  #abas button:hover:not([aria-current="page"]):not(.logo) {
     background: var(--fundo);
     color: var(--texto);
   }

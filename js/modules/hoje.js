@@ -17,8 +17,7 @@ const KM_ALERTA = 400; // acima disso o app pergunta se o odômetro está certo 
 // "raiz" é o espaço da tela onde a aba aparece; "usuario" é quem está logado.
 // A aba tem três partes: avisos (DAS), o dia (abrir, despesas, fechar) e o abastecimento (registro feito na bomba).
 export async function telaHoje(raiz, usuario) {
-  raiz.innerHTML = '<div id="hojeAvisos"></div><div id="hojeDia"></div><div id="hojeAbastecer"></div>';
-  telaAbastecer(raiz.querySelector('#hojeAbastecer'), usuario); // carrega por conta própria, sem atrasar o dia
+  raiz.innerHTML = '<div id="hojeAvisos"></div><div id="hojeDia"></div>';
   const caixa = raiz.querySelector('#hojeDia');
   caixa.innerHTML = '<p class="suave">Carregando…</p>';
 
@@ -53,6 +52,17 @@ export async function telaHoje(raiz, usuario) {
   let confirmarKm = null; // odômetro final que o usuário já confirmou, mesmo com km muito alto
   let confirmarOdometroInicial = null; // odômetro inicial que o usuário já confirmou, mesmo com salto grande
   let resultado = null; // dia recém-fechado, mostrado até o usuário tocar em "Lançar outro dia"
+
+  // Card de abastecimento: fica dentro do dia aberto (abaixo das despesas), na data do dia. Sem dia aberto, só aparece
+  // quando o Histórico pede para editar um abastecimento. Carrega por conta própria, sem atrasar o dia.
+  const noAbastecer = document.createElement('div');
+  const posicionarAbastecer = () => {
+    const lugar = caixa.querySelector('#lugarAbastecer');
+    const mostrar = lugar && ((dia && !resultado) || noAbastecer.dataset.editando === '1');
+    if (mostrar) lugar.appendChild(noAbastecer);
+    else noAbastecer.remove();
+  };
+  telaAbastecer(noAbastecer, usuario, { data: () => (dia ? dia.data : undefined), aoMudar: posicionarAbastecer });
   // Um dia que já tem odômetro final foi fechado antes: estamos editando.
   const emEdicao = () => dia && dia.odometroFinal !== undefined;
 
@@ -122,6 +132,7 @@ export async function telaHoje(raiz, usuario) {
     if (resultado) desenharResultado();
     else if (dia) desenharDiaAberto();
     else desenharAbrir();
+    posicionarAbastecer();
   }
 
   function desenharAbrir() {
@@ -139,7 +150,8 @@ export async function telaHoje(raiz, usuario) {
         <p class="erro" id="erro" role="alert"></p>
         <button type="button" class="botao" data-acao="abrir">Abrir o dia</button>
         <p class="suave" style="margin-top:12px">Esqueceu de lançar um dia? Troque a data acima.</p>
-      </section>`;
+      </section>
+      <div id="lugarAbastecer"></div>`;
   }
 
   function desenharResultado() {
@@ -191,6 +203,7 @@ export async function telaHoje(raiz, usuario) {
           .join('')}
         <div class="resumo total"><span>Total de despesas</span><b>${dinheiro(total)}</b></div>
       </section>
+      <div id="lugarAbastecer"></div>
       </div>
 
       <div class="col b">

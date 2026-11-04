@@ -72,7 +72,9 @@ function desenhar() {
   }
 
   menu.hidden = false;
-  menu.innerHTML = abas
+  menu.innerHTML =
+    '<button type="button" class="logo" data-aba="hoje" aria-label="LucroNoKM: ir para o início">LucroNoKM</button>' +
+    abas
     .map(
       (a) => `
       <button type="button" data-aba="${a.id}" ${a.id === atual.id ? 'aria-current="page"' : ''}>
@@ -85,7 +87,10 @@ function desenhar() {
 
 menu.addEventListener('click', (evento) => {
   const botao = evento.target.closest('button[data-aba]');
-  if (botao) location.hash = botao.dataset.aba;
+  if (!botao) return;
+  const mesmaAba = location.hash.replace('#', '') === botao.dataset.aba;
+  location.hash = botao.dataset.aba;
+  if (mesmaAba && botao.classList.contains('logo')) desenhar(); // já está no início: redesenha para voltar ao começo da aba
 });
 
 window.addEventListener('hashchange', desenhar);
