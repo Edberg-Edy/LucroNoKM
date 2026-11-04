@@ -52,7 +52,9 @@ export function htmlMetaSemana(m) {
   if (m.atingiu) {
     texto = `Meta da semana batida.${m.sobra > 0 ? ` Sobraram ${dinheiro(m.sobra)}.` : ''}`;
   } else if (m.semanaAtual && m.porDia !== null) {
-    texto = `Faltam ${dinheiro(m.falta)}. Com cerca de ${pl(m.diasRestantes)} de trabalho até domingo, são ${dinheiro(m.porDia)} de lucro por dia.`;
+    texto = m.extra
+      ? `Você já fez os ${pl(m.dias)} previstos. Faltam ${dinheiro(m.falta)}: para fechar a meta, seriam ${dinheiro(m.porDia)} por dia em ${pl(m.diasRestantes)} extras até domingo.`
+      : `Faltam ${dinheiro(m.falta)}. Restam ${pl(m.diasRestantes)} de trabalho até domingo: são ${dinheiro(m.porDia)} de lucro por dia. Folgou além do previsto? O valor por dia sobe sozinho.`;
   } else if (m.semanaAtual) {
     texto = `Faltam ${dinheiro(m.falta)} e não restam dias de trabalho nesta semana.`;
   } else {

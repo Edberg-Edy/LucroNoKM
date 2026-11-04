@@ -95,12 +95,12 @@ test('dias por semana vêm dos dias por mês do ajuste', () => {
 
 test('meta da semana = meta diária × dias de trabalho, com ritmo na semana atual', () => {
   const datas = datasDaSemana('2026-11-02'); // segunda 02/11
-  const m = metaDaSemana({ lucro: 150, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: true });
+  const m = metaDaSemana({ lucro: 150, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: true, diasTrabalhados: 1 });
   assert.equal(m.meta, 1500);
   assert.equal(m.falta, 1350);
   assert.equal(Math.round(m.percentual), 10);
-  assert.equal(m.diasRestantes, 4); // 5 dias de calendário × 6/7
-  assert.equal(m.porDia, 1350 / 4);
+  assert.equal(m.diasRestantes, 5); // 6 previstos − 1 trabalhado, e restam 5 dias de calendário
+  assert.equal(m.porDia, 1350 / 5);
   assert.equal(m.atingiu, false);
 });
 
@@ -118,4 +118,24 @@ test('semana passada só mostra o resultado, e meta batida mostra a sobra', () =
 test('sem meta ou sem dias por mês não há cartão', () => {
   const datas = datasDaSemana('2026-11-02');
   assert.equal(metaDaSemana({ lucro: 0, meta: 0, diasPorMes: 26, datas, hoje: '2026-11-03', hojeFechado: false }), null);
+});
+
+test('folga não avisada: faltam menos dias no calendário e o valor por dia sobe', () => {
+  const datas = datasDaSemana('2026-11-02');
+  // quinta 05/11, hoje ainda não lançado, só 2 dias trabalhados (seg e ter): restam 4 dias de calendário (qui a dom)
+  const m = metaDaSemana({ lucro: 500, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-05', hojeFechado: false, diasTrabalhados: 2 });
+  assert.equal(m.diasRestantes, 4); // previstos 6 − 2 = 4, calendário 4
+  assert.equal(m.porDia, 250);
+  // folgou também na quarta (mesmo 2 dias trabalhados, agora é sexta): restam 3 dias
+  const n = metaDaSemana({ lucro: 500, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-06', hojeFechado: false, diasTrabalhados: 2 });
+  assert.equal(n.diasRestantes, 3);
+  assert.equal(Math.round(n.porDia), 333);
+});
+
+test('já fez os dias previstos e não bateu a meta: ritmo vale para dias extras', () => {
+  const datas = datasDaSemana('2026-11-02');
+  const m = metaDaSemana({ lucro: 1000, meta: 250, diasPorMes: 26, datas, hoje: '2026-11-07', hojeFechado: true, diasTrabalhados: 6 });
+  assert.equal(m.extra, true);
+  assert.equal(m.diasRestantes, 1);
+  assert.equal(m.porDia, 500);
 });

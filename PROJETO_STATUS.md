@@ -35,7 +35,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **171 testes** passando (`npm test`), service worker `lucronokm-v22`.
+Estado atual: **173 testes** passando (`npm test`), service worker `lucronokm-v23`.
 
 ## Decisões recentes
 

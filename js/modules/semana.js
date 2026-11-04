@@ -83,8 +83,9 @@ export const diasPorSemana = (diasPorMes) => Math.min(7, Math.max(1, Math.round(
 
 // Meta da semana = meta diária × dias de trabalho por semana. Compara com o lucro já feito.
 //   datas = as 7 datas da semana na tela; hoje = data de hoje; hojeFechado = o dia de hoje já foi lançado?
+//   diasTrabalhados = dias já lançados nesta semana
 // Só na semana atual estima quantos dias de trabalho ainda restam e quanto de lucro por dia falta.
-export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado }) {
+export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado, diasTrabalhados = 0 }) {
   if (!(meta > 0) || !(diasPorMes > 0)) return null;
 
   const dias = diasPorSemana(diasPorMes);
@@ -93,11 +94,17 @@ export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado
   const indice = datas.indexOf(hoje);
   const semanaAtual = indice >= 0;
 
+  // Recalcula sozinho: dias que ainda faltam trabalhar = previstos − já trabalhados, mas nunca mais que os dias do calendário que restam.
+  // Folgou sem avisar? Sobram menos dias no calendário, e o lucro necessário por dia sobe.
   let diasRestantes = 0;
+  let extra = false;
   if (semanaAtual) {
     const corridos = 7 - indice - (hojeFechado ? 1 : 0); // dias do calendário que ainda restam
-    const estimados = Math.round((corridos * dias) / 7);
-    diasRestantes = corridos > 0 ? Math.max(hojeFechado ? 0 : 1, estimados) : 0;
+    diasRestantes = Math.min(corridos, Math.max(0, dias - diasTrabalhados));
+    if (diasRestantes === 0 && falta > 0 && corridos > 0) {
+      diasRestantes = corridos; // já fez os dias previstos e não bateu: o ritmo vale para dias extras
+      extra = true;
+    }
   }
 
   return {
@@ -110,6 +117,7 @@ export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado
     atingiu: lucro >= total,
     semanaAtual,
     diasRestantes,
+    extra,
     porDia: semanaAtual && falta > 0 && diasRestantes > 0 ? falta / diasRestantes : null,
   };
 }

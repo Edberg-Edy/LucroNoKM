@@ -188,6 +188,7 @@ export async function telaHistorico(caixa, usuario) {
           datas,
           hoje: hojeISO(),
           hojeFechado: dias.some((d) => d.data === hojeISO()),
+          diasTrabalhados: t.diasTrabalhados,
         })
       )}
 
