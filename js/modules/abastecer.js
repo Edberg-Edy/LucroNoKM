@@ -22,7 +22,7 @@ const guardarCheio = (cheio) => {
   }
 };
 
-const MOSTRAR = 6; // quantos abastecimentos aparecem na lista
+const MOSTRAR = 1; // aqui aparece só o último; a lista completa fica no Histórico > Combustível
 
 // "caixa" é o espaço da tela onde o card aparece; "usuario" é quem está logado.
 export async function telaAbastecer(caixa, usuario) {
@@ -85,7 +85,8 @@ export async function telaAbastecer(caixa, usuario) {
         <p class="${mensagemErro ? 'erro' : 'suave'}" id="erroAb" role="alert">${esc(mensagem)}</p>
         <button type="button" class="botao" data-acao="registrar">${editandoId ? 'Salvar alterações' : 'Registrar abastecimento'}</button>
         ${editandoId ? '<button type="button" class="botao secundario" data-acao="cancelarEdicao">Cancelar</button>' : ''}
-        ${recentesDaLista.length ? `<h2>Últimos abastecimentos</h2>${recentesDaLista.map(linhaDaLista).join('')}` : ''}
+        ${recentesDaLista.length ? `<h2>Último abastecimento</h2>${recentesDaLista.map(linhaDaLista).join('')}` : ''}
+        ${lista.length ? '<button type="button" class="botao secundario" data-acao="verTodos">Ver todos os abastecimentos</button>' : ''}
       </section>`;
   }
 
@@ -171,6 +172,15 @@ export async function telaAbastecer(caixa, usuario) {
     const botao = evento.target.closest('button');
     if (!botao || botao.disabled) return;
     if (botao.dataset.acao === 'registrar') return registrar();
+    if (botao.dataset.acao === 'verTodos') {
+      try {
+        sessionStorage.setItem('lucronokm.historicoModo', 'combustivel');
+      } catch (e) {
+        // sem sessionStorage: abre o histórico na semana
+      }
+      location.hash = 'historico';
+      return;
+    }
     if (botao.dataset.acao === 'cancelarEdicao') {
       editandoId = null;
       mensagem = '';
@@ -182,5 +192,13 @@ export async function telaAbastecer(caixa, usuario) {
     if (botao.dataset.excluir) return excluir(botao.dataset.excluir);
   });
 
+  // Veio do Histórico pelo botão Editar: já abre o formulário com esse abastecimento
+  try {
+    const pedido = sessionStorage.getItem('lucronokm.editarAbastecimento');
+    sessionStorage.removeItem('lucronokm.editarAbastecimento');
+    if (pedido && lista.some((a) => a.id === pedido)) return editar(pedido);
+  } catch (e) {
+    // sem sessionStorage: segue normal
+  }
   desenhar();
 }

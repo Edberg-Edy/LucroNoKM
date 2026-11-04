@@ -32,10 +32,11 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 17 | Abastecimento com odômetro próprio e opção de tanque cheio ou parcial | ✅ v0.17 |
 | 18 | Abastecimento como registro próprio na bomba (sem valor), consumo aproximado e card na aba Hoje | ✅ v0.18 |
 | 19 | Dia em três cartões: dinheiro do dia (plataformas), gastou no dia (combustível, despesas, manutenção, fixos) e para guardar (inclui combustível) | ✅ v0.19 |
+| 24 | Histórico > Combustível: lista completa dos abastecimentos por mês (trava com o mês fechado); aba Hoje mostra só o último | ✅ v0.24 |
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **173 testes** passando (`npm test`), service worker `lucronokm-v23`.
+Estado atual: **177 testes** passando (`npm test`), service worker `lucronokm-v24`.
 
 ## Decisões recentes
 

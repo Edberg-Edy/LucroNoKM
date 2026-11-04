@@ -1,7 +1,7 @@
 // Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI) e visão do mês (fechamento mensal).
 import { listarDiasFechados, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
-import { listarAbastecimentos } from '../services/abastecimentos.js';
+import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
@@ -12,6 +12,7 @@ import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from '.
 import { htmlMes, htmlCombustivelSemana, htmlMetaSemana } from './visaoMes.js';
 import { painelDoMes, combustivelDoPeriodo } from './combustivel.js';
 import { acertoDosFixos, totalFixos } from './fixos.js';
+import { htmlCombustivelMes } from './visaoCombustivel.js';
 import { htmlGraficoLucro, htmlGraficoGastos, maiorValor } from './graficos.js';
 import { htmlResultado } from './resultado.js';
 import { hojeISO, dataBR, dinheiro, esc } from './formatos.js';
@@ -48,7 +49,15 @@ export async function telaHistorico(caixa, usuario) {
   let verDia = null; // dia aberto em detalhe
   let aviso = ''; // mensagem curta (ex.: dia excluído)
   let confirmarExcluir = null; // id do dia que aguarda o segundo toque em ✕
-  let modo = 'semana'; // 'semana', 'mes' ou 'ano'
+  let modo = 'semana'; // 'semana', 'mes', 'ano' ou 'combustivel'
+  try {
+    // O botão "Ver todos" da aba Hoje pede direto a visão de combustível
+    if (sessionStorage.getItem('lucronokm.historicoModo') === 'combustivel') modo = 'combustivel';
+    sessionStorage.removeItem('lucronokm.historicoModo');
+  } catch (e) {
+    // sem sessionStorage: abre na semana
+  }
+  let apagandoAb = null; // abastecimento que aguarda o segundo toque em ✕
   let anoTela = hojeISO().slice(0, 4); // ano que está na tela (visão do ano)
   let ym = mesDe(hojeISO()); // mês que está na tela (aaaa-mm)
 
@@ -86,6 +95,7 @@ export async function telaHistorico(caixa, usuario) {
       <button type="button" data-modo="semana" aria-pressed="${modo === 'semana'}">Semana</button>
       <button type="button" data-modo="mes" aria-pressed="${modo === 'mes'}">Mês</button>
       <button type="button" data-modo="ano" aria-pressed="${modo === 'ano'}">Ano</button>
+      <button type="button" data-modo="combustivel" aria-pressed="${modo === 'combustivel'}">Combustível</button>
     </div>`;
 
     if (modo === 'ano') {
@@ -93,6 +103,21 @@ export async function telaHistorico(caixa, usuario) {
         avisoHtml +
         seletor +
         htmlAno({ ano: anoTela, resumo: resumoDoAno(dias, anoTela), limite: config.limiteMei, anoAtual: hojeISO().slice(0, 4) });
+      return;
+    }
+
+    if (modo === 'combustivel') {
+      caixa.innerHTML =
+        avisoHtml +
+        seletor +
+        htmlCombustivelMes({
+          ym,
+          atual: mesDe(hojeISO()),
+          lista: abastecimentos,
+          fechado: meses[ym]?.fechado === true,
+          precoLitro: config.precoLitro,
+          apagandoId: apagandoAb,
+        });
       return;
     }
 
@@ -301,6 +326,31 @@ export async function telaHistorico(caixa, usuario) {
     desenhar();
   }
 
+  // Exclusão de abastecimento: o primeiro toque pede confirmação, o segundo exclui.
+  async function excluirAb(id) {
+    if (meses[ym]?.fechado === true) return;
+    if (apagandoAb !== id) {
+      apagandoAb = id;
+      desenhar();
+      setTimeout(() => {
+        if (apagandoAb === id) {
+          apagandoAb = null;
+          desenhar();
+        }
+      }, 4000);
+      return;
+    }
+    try {
+      await excluirAbastecimento(usuario.uid, id);
+      abastecimentos = abastecimentos.filter((a) => a.id !== id);
+      aviso = 'Abastecimento excluído.';
+    } catch (e) {
+      aviso = 'Não foi possível excluir. Confira a internet.';
+    }
+    apagandoAb = null;
+    desenhar();
+  }
+
   // Fechar o mês: grava os totais e trava os dias dele.
   async function fecharOMes() {
     const resumo = resumoDoMes(dias, ym);
@@ -382,6 +432,16 @@ export async function telaHistorico(caixa, usuario) {
       aviso = 'Planilha baixada.';
       return desenhar();
     }
+    if (botao.dataset.abEditar) {
+      try {
+        sessionStorage.setItem('lucronokm.editarAbastecimento', botao.dataset.abEditar);
+      } catch (e) {
+        // sem sessionStorage: abre a aba Hoje sem o formulário preenchido
+      }
+      location.hash = 'hoje';
+      return;
+    }
+    if (botao.dataset.abExcluir) return excluirAb(botao.dataset.abExcluir);
     if (botao.dataset.acao === 'fecharMes') return fecharOMes();
     if (botao.dataset.acao === 'reabrirMes') return reabrirOMes();
 
