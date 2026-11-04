@@ -30,3 +30,20 @@ export function lembreteDAS({ hoje, meses = {}, primeiroDia = null }) {
   }
   return texto + ' Depois de pagar, marque em Histórico › Mês › Fechamento.';
 }
+
+const DIAS_ENTRE_BACKUPS = 30;
+const diasEntre = (a, b) => Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86400000);
+
+// Lembra de baixar o backup (Ajustes) quando faz 30 dias ou mais que o último foi feito.
+//   ultimoBackup = data 'aaaa-mm-dd' do último backup baixado neste aparelho (null se nunca)
+//   primeiroDia  = data do primeiro dia lançado (sem dados, não há o que salvar)
+// Quem nunca fez backup recebe o primeiro lembrete 30 dias depois de começar a usar o app.
+export function lembreteBackup({ hoje, ultimoBackup = null, primeiroDia = null }) {
+  if (!primeiroDia) return null;
+  const desde = ultimoBackup || primeiroDia;
+  const dias = diasEntre(desde, hoje);
+  if (dias < DIAS_ENTRE_BACKUPS) return null;
+  return ultimoBackup
+    ? `Faz ${dias} dias que você não baixa um backup. Em Ajustes, toque em "Baixar backup" para guardar seus dados.`
+    : 'Você ainda não baixou nenhum backup dos seus dados. Em Ajustes, toque em "Baixar backup".';
+}

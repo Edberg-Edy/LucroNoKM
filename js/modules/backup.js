@@ -48,6 +48,20 @@ export function baixarBackup(backup) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try {
+    localStorage.setItem(CHAVE_ULTIMO_BACKUP, hojeISO());
+  } catch (e) {
+    // sem localStorage: o lembrete de backup continua aparecendo
+  }
+}
+
+export const CHAVE_ULTIMO_BACKUP = 'lucronokm.ultimoBackup';
+export function ultimoBackup() {
+  try {
+    return localStorage.getItem(CHAVE_ULTIMO_BACKUP);
+  } catch (e) {
+    return null;
+  }
 }
 
 // Valida os ajustes do backup. Devolve uma frase de erro, ou null se estiver tudo certo.

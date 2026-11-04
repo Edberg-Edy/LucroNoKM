@@ -8,7 +8,8 @@ import { htmlResultado } from './resultado.js';
 import { listarAbastecimentos } from '../services/abastecimentos.js';
 import { telaAbastecer } from './abastecer.js';
 import { odometroSugerido, conferirOdometroInicial } from './sugestoes.js';
-import { lembreteDAS } from './lembretes.js';
+import { lembreteDAS, lembreteBackup } from './lembretes.js';
+import { ultimoBackup } from './backup.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
 
 const categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros'];
@@ -43,8 +44,11 @@ export async function telaHoje(raiz, usuario) {
     return;
   }
 
-  const lembrete = lembreteDAS({ hoje: hojeISO(), meses, primeiroDia: primeiro ? primeiro.data : null });
-  if (lembrete) raiz.querySelector('#hojeAvisos').innerHTML = `<p class="aviso-topo" role="status">${esc(lembrete)}</p>`;
+  const lembretes = [
+    lembreteDAS({ hoje: hojeISO(), meses, primeiroDia: primeiro ? primeiro.data : null }),
+    lembreteBackup({ hoje: hojeISO(), ultimoBackup: ultimoBackup(), primeiroDia: primeiro ? primeiro.data : null }),
+  ].filter(Boolean);
+  raiz.querySelector('#hojeAvisos').innerHTML = lembretes.map((t) => `<p class="aviso-topo" role="status">${esc(t)}</p>`).join('');
 
   let categoria = categorias[0]; // categoria de despesa selecionada
   let confirmarDescarte = false; // true depois do primeiro toque em "Descartar este dia"

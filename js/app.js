@@ -6,6 +6,7 @@ import { telaLogin } from './modules/login.js';
 import { telaHoje } from './modules/hoje.js';
 import { telaHistorico } from './modules/historico.js';
 import { telaAjustes } from './modules/ajustes.js';
+import { instalarCapturaDeErros } from './modules/erros.js';
 
 // Abas do app. O conteúdo real de cada uma será criado nas próximas etapas.
 const abas = [
@@ -13,6 +14,8 @@ const abas = [
   { id: 'historico', nome: 'Histórico', icone: '📊', texto: 'Aqui ficarão os gráficos de lucro e de gastos.' },
   { id: 'ajustes', nome: 'Ajustes', icone: '⚙️', texto: 'Aqui ficarão a meta, o km por litro e os custos.' },
 ];
+
+instalarCapturaDeErros(window); // erros não tratados ficam guardados no aparelho (Ajustes > Diagnóstico)
 
 const tela = document.getElementById('tela');
 const menu = document.getElementById('abas');

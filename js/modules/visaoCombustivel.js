@@ -4,7 +4,6 @@ import { dinheiro, dataBR, esc } from './formatos.js';
 import { nomeDoMes } from './mes.js';
 import { ordenar, resumoCombustivel, litrosBR, kmL } from './combustivel.js';
 
-const linha = (rotulo, valor) => `<div class="resumo"><span>${rotulo}</span><b>${valor}</b></div>`;
 
 // ym = mês na tela; atual = mês de hoje; lista = todos os abastecimentos; fechado = mês fechado (lista travada);
 // apagandoId = abastecimento que aguarda o segundo toque em ✕

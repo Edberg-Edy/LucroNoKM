@@ -110,6 +110,12 @@ LucroNoKM/
 2. Em `js/config/firebase-config.js`, coloque a configuração do seu app Web do Firebase.
 3. Abra o `index.html` e clique em **Go Live**. Acesse por `http://localhost:5500` (o login com Google não funciona por `127.0.0.1`).
 
+Verificações (rodam também no GitHub Actions a cada push):
+
+- `npm test`: testes das contas e telas (executor nativo do Node), inclusive a guarda que exige subir a versão do cache quando um arquivo do app muda
+- `npm run lint`: verificador de código (ESLint)
+- `npm run e2e`: teste de navegador com Chromium e um Firebase de mentira (precisa de `npm install` e `npx playwright install chromium` uma vez)
+
 Rodar os testes:
 
 ```

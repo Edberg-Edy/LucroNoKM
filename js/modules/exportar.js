@@ -2,7 +2,7 @@
 //
 // Formato pensado para o Excel em português: separador ";", vírgula nos decimais e BOM no começo
 // (sem ele o Excel mostra "R$" e acentos quebrados).
-import { hojeISO, dataBR } from './formatos.js';
+import { dataBR } from './formatos.js';
 
 const SEPARADOR = ';';
 const BOM = '﻿';

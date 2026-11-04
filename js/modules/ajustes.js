@@ -6,6 +6,7 @@ import { listarAbastecimentos, restaurarAbastecimentos } from '../services/abast
 import { listarMeses, salvarMes } from '../services/meses.js';
 import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcularDiaFechado } from './calculos.js';
 import { mesDe } from './mes.js';
+import { lerErros, limparErros, textoDiagnostico } from './erros.js';
 import { montarBackup, baixarBackup, validarBackup, prepararRestauracao } from './backup.js';
 import { trechos, consumoMedio, consumoAproximado, kmL } from './combustivel.js';
 import { validarCampoAjuste } from './validacao.js';
@@ -241,10 +242,45 @@ export async function telaAjustes(caixa, usuario) {
         <input type="file" id="arquivoBackup" accept="application/json,.json" hidden>
         <p class="suave" id="statusRestaurar" role="status"></p>
       </section>
+
+      <section class="cartao">
+        <h2>Diagnóstico</h2>
+        <p class="suave" id="statusDiagnostico" role="status">${resumoErros()}</p>
+        <button type="button" class="botao secundario" data-acao="copiarDiagnostico">Copiar diagnóstico</button>
+        <button type="button" class="botao secundario" data-acao="limparDiagnostico">Limpar</button>
+      </section>
       </div>
       </div>`;
     atualizarResumos();
     atualizarConsumo();
+  }
+
+  // Diagnóstico: erros guardados no aparelho (nada sai daqui sem você copiar)
+  function resumoErros() {
+    const n = lerErros().length;
+    return n === 0 ? 'Nenhum erro registrado neste aparelho.' : `${n} ${n === 1 ? 'erro registrado' : 'erros registrados'} neste aparelho. Copie e envie ao suporte se o app estiver com problema.`;
+  }
+
+  async function copiarDiagnostico() {
+    const aviso = caixa.querySelector('#statusDiagnostico');
+    let versao = 'desconhecida';
+    try {
+      versao = (await caches.keys()).filter((k) => k.startsWith('lucronokm-')).sort().pop() || versao;
+    } catch (e) {
+      // sem cache: segue sem a versão
+    }
+    const texto = textoDiagnostico(lerErros(), { versao, agente: navigator.userAgent });
+    try {
+      await navigator.clipboard.writeText(texto);
+      aviso.textContent = 'Diagnóstico copiado. Cole na mensagem ao suporte.';
+    } catch (e) {
+      aviso.textContent = 'Não foi possível copiar automaticamente.';
+    }
+  }
+
+  function limparDiagnostico() {
+    limparErros();
+    caixa.querySelector('#statusDiagnostico').textContent = resumoErros();
   }
 
   async function fazerBackup() {
@@ -435,6 +471,8 @@ export async function telaAjustes(caixa, usuario) {
     const botao = evento.target.closest('[data-acao]');
     if (!botao) return;
 
+    if (botao.dataset.acao === 'copiarDiagnostico') return copiarDiagnostico();
+    if (botao.dataset.acao === 'limparDiagnostico') return limparDiagnostico();
     if (botao.dataset.acao === 'backup') {
       fazerBackup();
       return;

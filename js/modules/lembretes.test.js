@@ -1,7 +1,7 @@
 // Testes do lembrete do DAS. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { lembreteDAS } from './lembretes.js';
+import { lembreteDAS, lembreteBackup } from './lembretes.js';
 
 const base = { primeiroDia: '2026-08-10', meses: {} };
 
@@ -44,4 +44,15 @@ test('não cobra DAS de mês anterior ao primeiro uso do app', () => {
 
 test('em janeiro, o DAS referente é o de dezembro do ano anterior', () => {
   assert.match(lembreteDAS({ ...base, primeiroDia: '2025-06-01', hoje: '2027-01-18' }), /de dezembro vence/);
+});
+
+test('backup: sem dados não lembra; com menos de 30 dias não lembra', () => {
+  assert.equal(lembreteBackup({ hoje: '2026-11-04', ultimoBackup: null, primeiroDia: null }), null);
+  assert.equal(lembreteBackup({ hoje: '2026-11-04', ultimoBackup: '2026-10-10', primeiroDia: '2026-08-01' }), null);
+  assert.equal(lembreteBackup({ hoje: '2026-11-04', ultimoBackup: null, primeiroDia: '2026-10-20' }), null);
+});
+
+test('backup: lembra com 30 dias ou mais, citando quantos dias', () => {
+  assert.match(lembreteBackup({ hoje: '2026-11-04', ultimoBackup: '2026-10-05', primeiroDia: '2026-08-01' }), /Faz 30 dias/);
+  assert.match(lembreteBackup({ hoje: '2026-11-04', ultimoBackup: null, primeiroDia: '2026-09-01' }), /ainda não baixou nenhum backup/);
 });
