@@ -188,6 +188,50 @@ test('nenhum erro de script durante o fluxo', async () => {
   assert.equal(guardados, null);
 });
 
+test('texto malicioso nos campos livres nunca vira HTML nem executa script', async () => {
+  // Dois formatos de ataque: tag solta (cai em texto) e fechamento de atributo (cai em value="...")
+  const tag = '<img src=x onerror="window.__xss=1">';
+  const atributo = '"><img src=x onerror="window.__xss=1">';
+  await pagina.evaluate(([tag, atributo]) => {
+    const dados = window.__dadosFalsos;
+    const chave = (parte) => [...dados.keys()].find((c) => c.includes(parte));
+    const config = dados.get(chave('/config/'));
+    config.plataformas = [tag, atributo, 'Keeta'];
+    config.manutencao[0].item = atributo;
+    config.fixos[0].item = tag;
+    const [caminhoDia, dia] = [...dados].find(([c, d]) => c.includes('/dias/') && d.aberto === false && !c.endsWith('do-ano-passado'));
+    const base = caminhoDia.replace(/[^/]+$/, '');
+    dados.set(caminhoDia, { ...dia, plataformas: [{ nome: tag, valor: 10, corridas: 1 }, { nome: atributo, valor: 5, corridas: 1 }], despesas: [{ categoria: tag, valor: 1 }] });
+    dados.set(base + 'aberto-malicioso', { aberto: true, data: '2099-01-01', odometroInicial: 1, despesas: [{ categoria: tag, valor: 2 }, { categoria: atributo, valor: 3 }], plataformas: [] });
+    const ym = dia.data.slice(0, 7);
+    dados.set(base.replace('/dias/', '/meses/') + ym, { observacao: atributo, checklist: {} });
+  }, [tag, atributo]);
+
+  // Hoje com o dia aberto malicioso
+  await pagina.click('#abas [data-aba="ajustes"]');
+  await pagina.waitForSelector('text=Seus dados e privacidade');
+  await pagina.click('#abas [data-aba="hoje"]');
+  await pagina.waitForSelector('text=Despesas do dia');
+  // Histórico: semana (abre o detalhe do dia), mês, ano e combustível
+  await pagina.click('#abas [data-aba="historico"]');
+  await pagina.waitForSelector('text=Meta da semana');
+  const ver = pagina.locator('[data-ver]').first();
+  if (await ver.count()) {
+    await ver.click();
+    await pagina.waitForSelector('text=Seu dinheiro do dia');
+    await pagina.click('[data-acao="voltar"]');
+  }
+  for (const modo of ['mes', 'ano', 'combustivel']) {
+    await pagina.click(`[data-modo="${modo}"]`);
+    await pagina.waitForSelector(`[data-modo="${modo}"][aria-pressed="true"]`);
+  }
+  await pagina.click('#abas [data-aba="ajustes"]');
+  await pagina.waitForSelector('text=Seus dados e privacidade');
+
+  assert.equal(await pagina.evaluate(() => window.__xss), undefined, 'um script do texto digitado foi executado');
+  assert.equal(await pagina.locator('img[src="x"]').count(), 0, 'texto digitado virou uma tag <img>');
+});
+
 test('apagar todos os meus dados esvazia a conta e volta ao primeiro acesso', async () => {
   await pagina.click('#abas [data-aba="ajustes"]');
   await pagina.waitForSelector('text=Seus dados e privacidade');
