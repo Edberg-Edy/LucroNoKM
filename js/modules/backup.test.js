@@ -175,3 +175,16 @@ test('abastecimento sem valor pago (formato novo) é aceito; valor inválido con
   b.abastecimentos = [{ id: 'x1', data: '2026-11-03', odometro: 1000, litros: 5, cheio: true, valor: 'abc' }];
   assert.equal(validarBackup(b).ok, false);
 });
+
+test('backup com valores fora dos limites das regras e dos Ajustes é recusado', () => {
+  recusa((b) => { b.config.precoLitro = 0; }, 'preço do litro zero zeraria o combustível');
+  recusa((b) => { b.config.meta = -1; }, 'meta negativa');
+  recusa((b) => { b.config.diasPorMes = 400; }, 'dias por mês acima de 31');
+  recusa((b) => { b.config.diasPorMes = 12.5; }, 'dias por mês fracionado');
+  recusa((b) => { b.config.kmPorLitro = 9999; }, 'km por litro absurdo');
+  recusa((b) => { b.config.manutencao[0].duracaoKm = 0; }, 'duração zero');
+  recusa((b) => { b.abastecimentos[0].litros = 250; }, 'litros acima de 200 (as regras recusariam)');
+  recusa((b) => { b.abastecimentos[0].odometro = 10000000; }, 'odômetro fora do normal');
+  recusa((b) => { b.meses['2026-09'].observacao = 'x'.repeat(2001); }, 'observação grande demais');
+  recusa((b) => { b.meses['2026-09'].totais = 'texto'; }, 'totais que não é objeto');
+});

@@ -36,7 +36,7 @@ export async function telaHoje(raiz, usuario) {
       carregarConfig(usuario.uid),
       ultimosDias(usuario.uid, 5).catch(() => []),
       listarMeses(usuario.uid).catch(() => ({})),
-      primeiroDia(usuario.uid).catch(() => null),
+      primeiroDia(usuario.uid).catch(() => undefined), // undefined = não deu para saber (diferente de null = nenhum dia)
       listarAbastecimentos(usuario.uid).catch(() => []),
     ]);
   } catch (e) {
@@ -142,7 +142,7 @@ export async function telaHoje(raiz, usuario) {
 
   function desenharAbrir() {
     const sugerido = odometroSugerido({ dias: recentes, abastecimentos }); // o maior odômetro conhecido (último dia ou abastecimento)
-    const boasVindas = mostrarBoasVindas({ temDias: Boolean(primeiro), diaAberto: false, dispensado: boasVindasDispensado() });
+    const boasVindas = mostrarBoasVindas({ temDias: primeiro !== null, diaAberto: false, dispensado: boasVindasDispensado() });
     caixa.innerHTML = `
       ${boasVindas ? htmlBoasVindas() : ''}
       <section class="cartao estreito">
@@ -258,17 +258,37 @@ export async function telaHoje(raiz, usuario) {
   }
 
   // Grava a nova lista de despesas e só atualiza a tela se a gravação deu certo.
-  async function gravarDespesas(novas) {
+  // As gravações entram numa fila: dois toques seguidos (ou sem sinal, quando cada gravação demora) não se atropelam
+  // e cada uma parte da lista já atualizada pela anterior. "muda" recebe a lista atual e devolve a nova.
+  let filaDespesas = Promise.resolve();
+  function gravarDespesas(muda) {
+    filaDespesas = filaDespesas.then(async () => {
+      if (!dia) return;
+      const novas = muda(dia.despesas);
+      try {
+        await atualizarDia(usuario.uid, dia.id, { despesas: novas });
+        dia.despesas = novas;
+        desenhar();
+      } catch (e) {
+        mostrarErro('Não foi possível salvar. Confira a internet e tente de novo.');
+      }
+    });
+    return filaDespesas;
+  }
+
+  // Um toque só: sem isso, toque duplo (ou Enter + clique) cria dois dias abertos
+  let abrindo = false;
+  async function abrir() {
+    if (abrindo || dia) return;
+    abrindo = true;
     try {
-      await atualizarDia(usuario.uid, dia.id, { despesas: novas });
-      dia.despesas = novas;
-      desenhar();
-    } catch (e) {
-      mostrarErro('Não foi possível salvar. Confira a internet e tente de novo.');
+      await abrirDia();
+    } finally {
+      abrindo = false;
     }
   }
 
-  async function abrir() {
+  async function abrirDia() {
     const data = caixa.querySelector('#data').value;
     const odometro = lerNumero(caixa.querySelector('#odometro').value);
 
@@ -294,6 +314,16 @@ export async function telaHoje(raiz, usuario) {
       return mostrarErro('Não foi possível verificar o mês. Confira a internet e tente de novo.');
     }
 
+    // Já existe dia fechado nesta data? Pede confirmação (dois dias na mesma data descontam os custos fixos duas vezes)
+    try {
+      if ((await diasFechadosNaData(usuario.uid, data)).length > 0 && confirmarDataRepetida !== data) {
+        confirmarDataRepetida = data;
+        return mostrarErro(`Já existe um dia fechado em ${dataBR(data)}. Toque em Abrir o dia de novo para lançar mais um nessa data.`);
+      }
+    } catch (e) {
+      // sem sinal: segue sem a conferência
+    }
+
     try {
       dia = await criarDia(usuario.uid, { data, odometroInicial: odometro });
       confirmarOdometroInicial = null;
@@ -306,7 +336,7 @@ export async function telaHoje(raiz, usuario) {
   function lancar() {
     const valor = lerNumero(caixa.querySelector('#valor').value);
     if (!valor) return mostrarErro('Digite um valor maior que zero.');
-    gravarDespesas([...dia.despesas, { categoria, valor }]);
+    gravarDespesas((lista) => [...lista, { categoria, valor }]);
   }
 
   async function fechar() {
@@ -415,7 +445,10 @@ export async function telaHoje(raiz, usuario) {
       setTimeout(() => {
         if (confirmarDescarte && dia) {
           confirmarDescarte = false;
+          const digitado = caixa.querySelector('#valor')?.value;
           desenhar();
+          const campo = caixa.querySelector('#valor');
+          if (campo && digitado) campo.value = digitado; // não apaga a despesa que estava sendo digitada
         }
       }, 4000);
       return;
@@ -442,7 +475,7 @@ export async function telaHoje(raiz, usuario) {
         b.setAttribute('aria-pressed', String(b.dataset.categoria === categoria));
       });
     } else if (botao.dataset.remover !== undefined) {
-      gravarDespesas(dia.despesas.filter((_, i) => i !== Number(botao.dataset.remover)));
+      gravarDespesas((lista) => lista.filter((_, i) => i !== Number(botao.dataset.remover)));
     } else if (botao.dataset.acao === 'irAjustes') {
       dispensarBoasVindas();
       location.hash = 'ajustes';

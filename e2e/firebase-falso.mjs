@@ -25,6 +25,7 @@ export const modulos = {
     export const persistentMultipleTabManager = () => ({});
     export const waitForPendingWrites = async () => {};
     export const serverTimestamp = () => ({ __carimbo: true });
+    export const deleteField = () => ({ __apagar: true });
 
     export const collection = (db, ...partes) => ({ colecao: true, caminho: partes.join('/') });
     export const doc = (base, ...partes) => {
@@ -63,7 +64,7 @@ export const modulos = {
       const lim = (consulta.restricoes || []).find((x) => x.tipo === 'limit');
       if (lim) itens = itens.slice(0, lim.n);
       const docs = itens.map(instantaneo);
-      return { docs, empty: docs.length === 0, size: docs.length, forEach: (f) => docs.forEach(f) };
+      return { docs, metadata: { fromCache: false }, empty: docs.length === 0, size: docs.length, forEach: (f) => docs.forEach(f) };
     };
 
     export const setDoc = async (ref, valor, opcoes) => {
@@ -72,7 +73,9 @@ export const modulos = {
     };
     export const updateDoc = async (ref, campos) => {
       if (!dados.has(ref.caminho)) throw Object.assign(new Error('not-found'), { code: 'not-found' });
-      dados.set(ref.caminho, { ...dados.get(ref.caminho), ...resolver(campos) });
+      const novo = { ...dados.get(ref.caminho), ...resolver(campos) };
+      for (const k of Object.keys(novo)) if (novo[k] && novo[k].__apagar) delete novo[k];
+      dados.set(ref.caminho, novo);
     };
     export const deleteDoc = async (ref) => { dados.delete(ref.caminho); };
     export const writeBatch = () => {

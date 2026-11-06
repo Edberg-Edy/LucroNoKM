@@ -243,6 +243,7 @@ export function validarAbastecimento(entrada, lista, { hoje, editandoId = null, 
 
   const odometro = lerNumero(entrada.odometro);
   if (odometro === null || odometro <= 0) return falha('Informe o odômetro de agora: é com ele que o app mede o consumo.');
+  if (odometro >= 10000000) return falha('Odômetro alto demais. Confira o valor digitado.');
 
   const litros = lerNumero(entrada.litros);
   if (litros === null || litros <= 0) return falha('Digite os litros abastecidos.');

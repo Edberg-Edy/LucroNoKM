@@ -1,7 +1,7 @@
 // Testes da conferência dos Ajustes. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validarCampoAjuste } from './validacao.js';
+import { validarCampoAjuste, erroDeLimite } from './validacao.js';
 
 test('campos que precisam ser maiores que zero recusam vazio, zero e texto', () => {
   for (const chave of ['kmPorLitro', 'precoLitro', 'diasPorMes', 'manutencao.0.duracaoKm']) {
@@ -48,4 +48,14 @@ test('valores absurdos (erro de digitação) são recusados', () => {
 test('número negativo e campo desconhecido são recusados', () => {
   assert.equal(validarCampoAjuste('meta', '-5').ok, false);
   assert.equal(validarCampoAjuste('inexistente', '5').ok, false);
+});
+
+test('erroDeLimite usa os mesmos limites da tela de Ajustes', () => {
+  assert.equal(erroDeLimite('precoLitro', 6), null);
+  assert.match(erroDeLimite('precoLitro', 0), /maior que zero/);
+  assert.match(erroDeLimite('precoLitro', 31), /alto demais/);
+  assert.match(erroDeLimite('diasPorMes', 12.5), /inteiro/);
+  assert.match(erroDeLimite('meta', -5), /negativo/);
+  assert.match(erroDeLimite('meta', NaN), /inválido/);
+  assert.equal(erroDeLimite('manutencao.0.preco', 250), null);
 });

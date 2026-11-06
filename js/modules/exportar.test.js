@@ -60,3 +60,11 @@ test('planilha do ano junta os meses do ano e ignora outros anos', () => {
   assert.equal(l.length, 4); // cabeçalho + 2 dias + total
   assert.equal(l.at(-1)[l[0].indexOf('iFood')], '120');
 });
+
+test('número negativo continua número na planilha, mas texto que parece fórmula é protegido', () => {
+  assert.equal(celula('-50,3'), '-50,3');
+  assert.equal(celula('-0,5'), '-0,5');
+  assert.equal(celula('-1+1'), "'-1+1");
+  assert.equal(celula('=SOMA(A1)'), "'=SOMA(A1)");
+  assert.equal(celula('@cmd'), "'@cmd");
+});

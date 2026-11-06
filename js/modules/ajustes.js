@@ -309,7 +309,7 @@ export async function telaAjustes(caixa, usuario) {
     try {
       const r = await apagarTodosOsDados(usuario.uid);
       try {
-        Object.keys(localStorage).filter((k) => k.startsWith('lucronokm.')).forEach((k) => localStorage.removeItem(k));
+        Object.keys(localStorage).filter((k) => k.startsWith('lucronokm')).forEach((k) => localStorage.removeItem(k));
       } catch (e) {
         // sem localStorage: nada a limpar
       }
@@ -328,13 +328,16 @@ export async function telaAjustes(caixa, usuario) {
     try {
       const [dias, meses, abastecimentos] = await Promise.all([
         listarTodosDias(usuario.uid),
-        listarMeses(usuario.uid),
-        listarAbastecimentos(usuario.uid),
+        listarMeses(usuario.uid, { completo: true }),
+        listarAbastecimentos(usuario.uid, { completo: true }),
       ]);
       baixarBackup(montarBackup(config, dias, new Date(), meses, abastecimentos));
       aviso.textContent = `Backup baixado (${dias.length} dias, ${Object.keys(meses).length} meses e ${abastecimentos.length} abastecimentos).`;
     } catch (e) {
-      aviso.textContent = 'Não foi possível gerar o backup. Confira a internet e tente de novo.';
+      aviso.textContent =
+        e.code === 'sem-servidor'
+          ? 'Sem conexão: o backup precisa da internet para vir completo. Tente de novo quando o sinal voltar.'
+          : 'Não foi possível gerar o backup. Confira a internet e tente de novo.';
     }
   }
 
@@ -451,10 +454,12 @@ export async function telaAjustes(caixa, usuario) {
     botao.textContent = 'Escolher arquivo de backup…';
     aviso.textContent = 'Restaurando…';
     try {
-      Object.assign(config, padroes(), preparado.config); // valores novos que o backup não tinha ficam com o padrão
-      const gravacoes = [await salvarConfig(usuario.uid, config), await restaurarDias(usuario.uid, preparado.dias)];
+      // Os ajustes vão por último: se algum lote for recusado, os ajustes atuais não são trocados pela metade
+      const gravacoes = [await restaurarDias(usuario.uid, preparado.dias)];
       for (const m of preparado.meses) gravacoes.push(await salvarMes(usuario.uid, m.ym, m.campos));
       gravacoes.push(await restaurarAbastecimentos(usuario.uid, preparado.abastecimentos));
+      Object.assign(config, padroes(), preparado.config); // valores novos que o backup não tinha ficam com o padrão
+      gravacoes.push(await salvarConfig(usuario.uid, config));
 
       const tudo = gravacoes.every((g) => g.sincronizado);
       desenhar(); // mostra os ajustes restaurados
@@ -491,6 +496,12 @@ export async function telaAjustes(caixa, usuario) {
     } else {
       valor = campo.value.trim();
       if (valor === '') { // nome vazio não vale: volta ao valor anterior
+        desenhar();
+        return;
+      }
+      // Duas plataformas com o mesmo nome dividiriam o mesmo campo de ganho no fechamento do dia
+      if (caminho[0] === 'plataformas' && config.plataformas.some((p, i) => i !== Number(caminho[1]) && p.toLowerCase() === valor.toLowerCase())) {
+        mostrarStatus('Já existe uma plataforma com esse nome.');
         desenhar();
         return;
       }
@@ -547,7 +558,15 @@ export async function telaAjustes(caixa, usuario) {
       plataformas: 'Nova plataforma',
     };
 
-    if (acao === 'adicionar') config[lista].push(modelos[lista]);
+    if (acao === 'adicionar') {
+      let novo = modelos[lista];
+      if (lista === 'plataformas') {
+        let n = 1;
+        while (config.plataformas.some((p) => p.toLowerCase() === (n === 1 ? novo : `${novo} ${n}`).toLowerCase())) n++;
+        if (n > 1) novo = `${novo} ${n}`;
+      }
+      config[lista].push(novo);
+    }
     if (acao === 'remover') config[lista].splice(Number(posicao), 1);
 
     desenhar();

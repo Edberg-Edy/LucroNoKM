@@ -139,3 +139,11 @@ test('já fez os dias previstos e não bateu a meta: ritmo vale para dias extras
   assert.equal(m.diasRestantes, 1);
   assert.equal(m.porDia, 500);
 });
+
+test('a semana soma o combustível dos dias (a tela o soma ao que se guarda)', () => {
+  const comComb = (data, combustivel) => ({ ...dia(data, 100, 40), calculados: { ...dia(data, 100, 40).calculados, combustivel } });
+  const datas = datasDaSemana('2026-11-02');
+  const r = resumoDaSemana([comComb('2026-11-02', 20), comComb('2026-11-03', 15.5)], datas);
+  assert.equal(r.totais.combustivel, 35.5);
+  assert.equal(r.totais.guardar, 40); // 20 + 20 de cada dia: moto e custos fixos
+});

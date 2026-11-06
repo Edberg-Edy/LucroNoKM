@@ -77,6 +77,8 @@ test('farol: verde, amarelo e vermelho', () => {
   assert.equal(farol(0.01, 200), 'amarelo');
   assert.equal(farol(0, 200), 'vermelho');
   assert.equal(farol(-15, 200), 'vermelho');
+  assert.equal(farol(0, 0), 'vermelho'); // meta zerada e lucro zero não é verde
+  assert.equal(farol(10, 0), 'verde');
   const verde = calcularDia({ ...diaExemplo, plataformas: [{ nome: 'iFood', valor: 400 }] }, p);
   assert.equal(verde.status, 'verde');
   const prejuizo = calcularDia({ ...diaExemplo, plataformas: [{ nome: 'iFood', valor: 20 }] }, p);
@@ -95,6 +97,9 @@ test('lerHoras aceita 8, 8,5 e 8:30', () => {
   assert.equal(lerHoras(''), null);
   assert.equal(lerHoras('abc'), null);
   assert.equal(lerHoras('0'), null);
+  assert.equal(lerHoras('99'), null);
+  assert.equal(lerHoras('24'), 24);
+  assert.equal(lerHoras('8:75'), null);
 });
 
 test('recalcularDiaFechado usa os parâmetros novos e guarda a nova fotografia', () => {

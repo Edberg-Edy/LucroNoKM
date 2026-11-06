@@ -249,7 +249,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       <label class="marca"><input type="checkbox" data-check="dasPago" ${marcas.dasPago ? 'checked' : ''}> DAS-MEI pago</label>
       <label class="marca"><input type="checkbox" data-check="reservaTransferida" ${marcas.reservaTransferida ? 'checked' : ''}> Valor guardado transferido para a reserva</label>
       <label>Observação (opcional)
-        <input type="text" data-obs value="${esc(info?.observacao || '')}">
+        <input type="text" data-obs maxlength="2000" value="${esc(info?.observacao || '')}">
       </label>
       <p class="suave">O DAS vence no dia 20 do mês seguinte, por isso estas marcas podem ser alteradas mesmo depois de fechar o mês.</p>
       ${acao}

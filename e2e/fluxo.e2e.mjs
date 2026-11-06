@@ -249,3 +249,25 @@ test('apagar todos os meus dados esvazia a conta e volta ao primeiro acesso', as
   await pagina.waitForSelector('text=Bem-vindo ao LucroNoKM');
   assert.deepEqual(erros, []);
 });
+
+test('toque duplo não cria dois dias abertos nem dois abastecimentos', async () => {
+  const contar = (trecho, campo, valor) =>
+    pagina.evaluate(([t, c, v]) => [...window.__dadosFalsos].filter(([k, d]) => k.includes(t) && (c === null || d[c] === v)).length, [trecho, campo, valor]);
+
+  await pagina.goto(url + '#hoje');
+  await pagina.reload();
+  await pagina.waitForSelector('[data-acao="dispensarBoasVindas"], #odometro');
+  if (await pagina.locator('[data-acao="dispensarBoasVindas"]').count()) await pagina.click('[data-acao="dispensarBoasVindas"]');
+  await pagina.waitForSelector('#odometro');
+  await pagina.fill('#odometro', '2000');
+  await pagina.dblclick('[data-acao="abrir"]');
+  await pagina.waitForSelector('text=Dia aberto');
+  assert.equal(await contar('/dias/', 'aberto', true), 1, 'dois dias abertos foram criados');
+
+  await pagina.fill('#lugarAbastecer [data-f="odometro"]', '2040');
+  await pagina.fill('#lugarAbastecer [data-f="litros"]', '4');
+  await pagina.dblclick('#lugarAbastecer [data-acao="registrar"]');
+  await pagina.waitForTimeout(800);
+  assert.equal(await contar('/abastecimentos/', null, null), 1, 'o abastecimento foi criado duas vezes');
+  assert.deepEqual(erros, []);
+});

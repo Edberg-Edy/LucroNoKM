@@ -1,6 +1,7 @@
 // Backup dos dados do usuário em um arquivo .json, e restauração a partir dele.
 // As funções de montar, validar e preparar são puras (testadas em backup.test.js).
 import { hojeISO } from './formatos.js';
+import { erroDeLimite } from './validacao.js';
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
 const MES = /^\d{4}-\d{2}$/;
@@ -71,12 +72,18 @@ function erroNosAjustes(c) {
     if (!numero(c[campo])) return `Ajuste inválido no backup: ${campo}.`;
   }
   if (c.contasMes !== undefined && !numero(c.contasMes)) return 'Ajuste inválido no backup: contasMes.';
-  if (c.kmPorLitro <= 0 || c.diasPorMes < 1) return 'Ajuste fora do normal no backup (km por litro ou dias por mês).';
+  // Os mesmos limites da tela de Ajustes (preço do litro 0 zeraria o combustível de todos os dias novos)
+  for (const campo of ['meta', 'kmPorLitro', 'precoLitro', 'diasPorMes', 'limiteMei', 'contasMes']) {
+    if (c[campo] === undefined) continue;
+    const erro = erroDeLimite(campo, c[campo]);
+    if (erro) return `Ajuste fora do normal no backup. ${erro}`;
+  }
 
   const itemOk = {
     plataformas: (x) => texto(x) && x.trim() !== '',
-    manutencao: (x) => objeto(x) && texto(x.item) && numero(x.preco) && numero(x.duracaoKm),
-    fixos: (x) => objeto(x) && texto(x.item) && numero(x.valorMensal),
+    manutencao: (x) =>
+      objeto(x) && texto(x.item) && numero(x.preco) && numero(x.duracaoKm) && !erroDeLimite('preco', x.preco) && !erroDeLimite('duracaoKm', x.duracaoKm),
+    fixos: (x) => objeto(x) && texto(x.item) && numero(x.valorMensal) && !erroDeLimite('valorMensal', x.valorMensal),
   };
   for (const lista of Object.keys(itemOk)) {
     if (!Array.isArray(c[lista]) || !c[lista].every(itemOk[lista])) return `Ajuste inválido no backup: ${lista}.`;
@@ -111,9 +118,10 @@ function erroNoDia(d) {
 function erroNoAbastecimento(a) {
   if (!objeto(a) || !idValido(a.id)) return 'Há um abastecimento sem identificação válida no backup.';
   if (!texto(a.data) || !DATA.test(a.data)) return `Abastecimento com data inválida no backup (${a.id}).`;
-  if (!numero(a.litros) || a.litros <= 0) return `Abastecimento de ${a.data} com litros inválidos.`;
+  if (!numero(a.litros) || a.litros <= 0 || a.litros > 200) return `Abastecimento de ${a.data} com litros inválidos.`;
   if (a.valor !== undefined && a.valor !== null && (!numero(a.valor) || a.valor < 0)) return `Abastecimento de ${a.data} com valor inválido.`;
   if (a.odometro !== undefined && !nuloOuNumero(a.odometro)) return `Abastecimento de ${a.data} com odômetro inválido.`;
+  if (a.odometro !== undefined && a.odometro !== null && (a.odometro < 0 || a.odometro >= 10000000)) return `Abastecimento de ${a.data} com odômetro fora do normal.`;
   if (a.cheio !== undefined && typeof a.cheio !== 'boolean') return `Abastecimento de ${a.data} com "tanque cheio" inválido.`;
   return null;
 }
@@ -148,7 +156,8 @@ export function validarBackup(b) {
     objeto(m) &&
     (m.fechado === undefined || typeof m.fechado === 'boolean') &&
     (m.checklist === undefined || objeto(m.checklist)) &&
-    (m.observacao === undefined || texto(m.observacao));
+    (m.observacao === undefined || (texto(m.observacao) && m.observacao.length <= 2000)) &&
+    (m.totais === undefined || objeto(m.totais));
   if (!objeto(meses) || !Object.entries(meses).every(([ym, m]) => mesOk(ym, m))) {
     return falha('Os meses do backup estão inválidos.');
   }

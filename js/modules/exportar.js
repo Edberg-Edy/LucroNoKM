@@ -12,7 +12,8 @@ const num = (n) => (Number.isFinite(n) ? (Math.round(n * 100) / 100).toString().
 // Texto seguro para uma célula: aspas dobradas e proteção contra fórmula (=, +, -, @ no começo viram texto).
 export function celula(valor) {
   let t = String(valor ?? '');
-  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  // Número negativo (ex.: lucro de um dia no prejuízo) continua número; qualquer outro começo suspeito vira texto
+  if (/^[=+\-@\t\r]/.test(t) && !/^-\d+(,\d+)?$/.test(t)) t = "'" + t;
   return /[;"\n\r]/.test(t) ? `"${t.replaceAll('"', '""')}"` : t;
 }
 

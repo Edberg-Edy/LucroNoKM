@@ -17,6 +17,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { db } from './firebase.js';
 import { gravar } from '../modules/gravacao.js';
+import { naoVazioDoCache, exigirServidor } from './leitura.js';
 
 const colecao = (uid) => collection(db, 'users', uid, 'dias');
 const refDia = (uid, id) => doc(db, 'users', uid, 'dias', id);
@@ -63,7 +64,9 @@ export async function listarDiasFechados(uid) {
 // Lê só os dias fechados de um ano (aaaa). O histórico carrega por ano: quem usa há anos não baixa tudo de uma vez.
 // Duas condições no mesmo campo (data) não precisam de índice no Firestore; o filtro "fechado" é feito aqui.
 export async function listarDiasFechadosDoAno(uid, ano) {
-  const resultado = await getDocs(query(colecao(uid), where('data', '>=', `${ano}-01-01`), where('data', '<=', `${ano}-12-31`)));
+  const resultado = naoVazioDoCache(
+    await getDocs(query(colecao(uid), where('data', '>=', `${ano}-01-01`), where('data', '<=', `${ano}-12-31`)))
+  );
   return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() })).filter((d) => d.aberto === false);
 }
 
@@ -90,7 +93,7 @@ export async function primeiroDia(uid) {
 
 // Lê todos os dias (abertos e fechados). Usado no backup.
 export async function listarTodosDias(uid) {
-  const resultado = await getDocs(colecao(uid));
+  const resultado = exigirServidor(await getDocs(colecao(uid))); // backup: precisa vir completo do servidor
   return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() }));
 }
 

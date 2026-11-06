@@ -2,6 +2,7 @@
 // Cada abastecimento é um registro próprio: não depende do dia de trabalho nem do horário em que aconteceu.
 import { listarAbastecimentos, novoAbastecimento, atualizarAbastecimento, excluirAbastecimento } from '../services/abastecimentos.js';
 import { ultimosDias, buscarDiaAberto } from '../services/dias.js';
+import { mesEstaFechado } from '../services/meses.js';
 import { validarAbastecimento, ordenar, litrosBR } from './combustivel.js';
 import { odometroSugerido } from './sugestoes.js';
 import { hojeISO, dataBR, esc } from './formatos.js';
@@ -98,7 +99,28 @@ export async function telaAbastecer(caixa, usuario, opcoes = {}) {
     if (opcoes.aoMudar) opcoes.aoMudar();
   }
 
+  // Um envio por vez: toque duplo (ou sem sinal, quando o envio demora) criaria o mesmo abastecimento duas vezes
+  let salvando = false;
   async function registrar() {
+    if (salvando) return;
+    salvando = true;
+    try {
+      await registrarAgora();
+    } finally {
+      salvando = false;
+    }
+  }
+
+  // Mês fechado não muda: vale para abastecimento novo, para editar (data antiga e nova) e para excluir
+  async function mesTravado(...datas) {
+    for (const d of datas) {
+      if (d && (await mesEstaFechado(usuario.uid, d.slice(0, 7)))) return true;
+    }
+    return false;
+  }
+  const TEXTO_TRAVADO = 'Este mês está fechado. Reabra o mês no Histórico para mudar os abastecimentos dele.';
+
+  async function registrarAgora() {
     if (!editandoId) rascunho.data = dataNova(); // abastecimento novo vale na data do dia aberto
     const conferido = validarAbastecimento(rascunho, lista, { hoje: hojeISO(), editandoId, dias: recentes });
     if (!conferido.ok) {
@@ -106,12 +128,25 @@ export async function telaAbastecer(caixa, usuario, opcoes = {}) {
       mensagemErro = true;
       return desenhar();
     }
+    const original = editandoId ? lista.find((a) => a.id === editandoId) : null;
+    if (await mesTravado(conferido.dados.data, original && original.data)) {
+      mensagem = TEXTO_TRAVADO;
+      mensagemErro = true;
+      return desenhar();
+    }
     guardarCheio(rascunho.cheio);
     mensagemErro = false;
     try {
       if (editandoId) {
-        await atualizarAbastecimento(usuario.uid, editandoId, conferido.dados);
-        lista = lista.map((a) => (a.id === editandoId ? { ...a, ...conferido.dados } : a));
+        // O valor pago de um abastecimento antigo não vale mais se os litros mudaram (o preço por litro ficaria errado)
+        const dados = original && Number.isFinite(original.valor) && original.litros !== conferido.dados.litros ? { ...conferido.dados, valor: null } : conferido.dados;
+        await atualizarAbastecimento(usuario.uid, editandoId, dados);
+        lista = lista.map((a) => {
+          if (a.id !== editandoId) return a;
+          const novo = { ...a, ...dados };
+          if (novo.valor === null) delete novo.valor;
+          return novo;
+        });
         mensagem = 'Abastecimento atualizado.';
       } else {
         const gravado = await novoAbastecimento(usuario.uid, conferido.dados);
@@ -138,6 +173,13 @@ export async function telaAbastecer(caixa, usuario, opcoes = {}) {
         }
       }, 4000);
       return;
+    }
+    const alvo = lista.find((a) => a.id === id);
+    if (alvo && (await mesTravado(alvo.data))) {
+      mensagem = TEXTO_TRAVADO;
+      mensagemErro = true;
+      confirmarExcluir = null;
+      return desenhar();
     }
     try {
       await excluirAbastecimento(usuario.uid, id);

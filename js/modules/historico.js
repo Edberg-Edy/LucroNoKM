@@ -31,7 +31,8 @@ export async function telaHistorico(caixa, usuario) {
   let abastecimentos; // abastecimentos de combustível (se não carregarem, o resto do histórico continua funcionando)
   try {
     [dias, config, meses, diaAberto, abastecimentos] = await Promise.all([
-      listarDiasFechadosDoAno(usuario.uid, hojeISO().slice(0, 4)),
+      // Sem sinal e sem cópia do ano no aparelho: abre mesmo assim, avisando (e tenta de novo ao navegar)
+      listarDiasFechadosDoAno(usuario.uid, hojeISO().slice(0, 4)).catch((e) => (e.code === 'sem-servidor' ? null : Promise.reject(e))),
       carregarConfig(usuario.uid),
       listarMeses(usuario.uid),
       buscarDiaAberto(usuario.uid),
@@ -48,6 +49,10 @@ export async function telaHistorico(caixa, usuario) {
   let selecionado = null; // dia tocado no gráfico (filtra a lista)
   let verDia = null; // dia aberto em detalhe
   let aviso = ''; // mensagem curta (ex.: dia excluído)
+  if (dias === null) {
+    dias = [];
+    aviso = 'Sem sinal: ainda não deu para carregar os dias deste ano. Os números abaixo podem estar incompletos.';
+  }
   let confirmarExcluir = null; // id do dia que aguarda o segundo toque em ✕
   let modo = 'semana'; // 'semana', 'mes', 'ano' ou 'combustivel'
   try {
@@ -62,7 +67,7 @@ export async function telaHistorico(caixa, usuario) {
   let ym = mesDe(hojeISO()); // mês que está na tela (aaaa-mm)
 
   // O histórico carrega por ano (começa pelo ano de hoje). Ao navegar para um período de outro ano, busca esse ano na hora.
-  const anosCarregados = new Set([hojeISO().slice(0, 4)]);
+  const anosCarregados = new Set(aviso ? [] : [hojeISO().slice(0, 4)]);
   const anosDaTela = () => {
     if (modo === 'ano') return [anoTela];
     if (modo === 'mes') return [ym.slice(0, 4), somarMeses(ym, -1).slice(0, 4)]; // o mês anterior entra na comparação
@@ -229,7 +234,7 @@ export async function telaHistorico(caixa, usuario) {
         <div><span>Faturamento</span><b>${dinheiro(t.faturamento)}</b></div>
         <div><span>Gastos totais</span><b>${dinheiro(t.gastos)}</b></div>
         <div><span>Lucro</span><b>${dinheiro(t.lucro)}</b></div>
-        <div><span>Guardar na semana</span><b>${dinheiro(t.guardar)}</b></div>
+        <div><span>Guardar na semana</span><b>${dinheiro(t.guardar + t.combustivel)}</b></div>
         <div><span>Vs. semana anterior</span><b>${textoVariacao}</b></div>
         <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
         <div><span>Média por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
@@ -422,10 +427,12 @@ export async function telaHistorico(caixa, usuario) {
     const novo = marca
       ? { checklist: { ...(atual.checklist || {}), [marca]: campo.checked } }
       : { observacao: campo.value.trim() };
+    // Atualiza a tela antes de gravar: dois cliques seguidos partem do estado já atualizado (nenhuma marca se perde)
+    meses[ym] = { ...atual, ...novo };
     try {
       await salvarMes(usuario.uid, ym, novo);
-      meses[ym] = { ...atual, ...novo };
     } catch (e) {
+      meses[ym] = atual;
       aviso = 'Não foi possível salvar. Confira a internet e tente de novo.';
     }
     desenhar();

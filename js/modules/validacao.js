@@ -34,3 +34,16 @@ export function validarCampoAjuste(chave, texto) {
 
   return { ok: true, valor: regra.inteiro ? Math.max(1, Math.round(n)) : n };
 }
+
+// Mesma conferência de limites, para números que já vieram prontos (ex.: restauração de backup).
+// Devolve uma frase de erro ou null.
+export function erroDeLimite(chave, n) {
+  const regra = REGRAS[String(chave).split('.').pop()];
+  if (!regra) return null;
+  if (typeof n !== 'number' || !Number.isFinite(n)) return `${regra.rotulo}: valor inválido.`;
+  if (n < 0) return `${regra.rotulo}: não pode ser negativo.`;
+  if (regra.positivo && n <= 0) return `${regra.rotulo}: precisa ser maior que zero.`;
+  if (regra.inteiro && !Number.isInteger(n)) return `${regra.rotulo}: precisa ser um número inteiro.`;
+  if (n > regra.max) return `${regra.rotulo}: valor alto demais.`;
+  return null;
+}

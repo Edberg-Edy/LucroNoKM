@@ -36,7 +36,7 @@ export function parametrosDoDia(config) {
 
 // Farol do dia: verde bateu a meta, amarelo lucrou mas ficou abaixo, vermelho foi prejuízo (ou zero a zero).
 export function farol(lucro, meta) {
-  if (lucro >= meta) return 'verde';
+  if (lucro > 0 && lucro >= meta) return 'verde'; // com meta 0, um dia de lucro zero não é verde
   if (lucro > 0) return 'amarelo';
   return 'vermelho';
 }
@@ -45,10 +45,10 @@ export function farol(lucro, meta) {
 export function lerHoras(texto) {
   const t = String(texto ?? '').trim();
   if (!t) return null;
-  const horas = t.includes(':')
-    ? Number(t.split(':')[0]) + Number(t.split(':')[1] || 0) / 60
-    : Number(t.replace(',', '.'));
-  return Number.isFinite(horas) && horas > 0 ? horas : null;
+  const minutos = t.includes(':') ? Number(t.split(':')[1] || 0) : 0;
+  if (minutos < 0 || minutos >= 60) return null; // "8:75" não existe
+  const horas = t.includes(':') ? Number(t.split(':')[0]) + minutos / 60 : Number(t.replace(',', '.'));
+  return Number.isFinite(horas) && horas > 0 && horas <= 24 ? horas : null; // um dia tem no máximo 24 horas
 }
 
 // Calcula tudo do dia.

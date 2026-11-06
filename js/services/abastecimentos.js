@@ -9,11 +9,13 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteField,
   deleteDoc,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { db } from './firebase.js';
 import { gravar } from '../modules/gravacao.js';
+import { exigirServidor } from './leitura.js';
 import { emLotes } from './dias.js';
 
 const colecao = (uid) => collection(db, 'users', uid, 'abastecimentos');
@@ -21,8 +23,10 @@ const refAbastecimento = (uid, id) => doc(db, 'users', uid, 'abastecimentos', id
 const comId = (achado) => ({ id: achado.id, ...achado.data() });
 
 // Todos os abastecimentos (Histórico, Ajustes e backup).
-export async function listarAbastecimentos(uid) {
-  const resultado = await getDocs(colecao(uid));
+// completo = true (backup): só vale a lista inteira vinda do servidor.
+export async function listarAbastecimentos(uid, { completo = false } = {}) {
+  const bruto = await getDocs(colecao(uid));
+  const resultado = completo ? exigirServidor(bruto) : bruto; // vazio é normal para quem nunca abasteceu
   return resultado.docs.map(comId);
 }
 
@@ -34,7 +38,12 @@ export function novoAbastecimento(uid, dados) {
 }
 
 // Muda só os campos informados (um campo que não vem, como o valor pago de um abastecimento antigo, fica como está).
-export const atualizarAbastecimento = (uid, id, dados) => gravar(updateDoc(refAbastecimento(uid, id), dados));
+// valor: null apaga o valor pago antigo (ele deixa de valer quando os litros mudam).
+export function atualizarAbastecimento(uid, id, dados) {
+  const campos = { ...dados };
+  if (campos.valor === null) campos.valor = deleteField();
+  return gravar(updateDoc(refAbastecimento(uid, id), campos));
+}
 
 export const excluirAbastecimento = (uid, id) => gravar(deleteDoc(refAbastecimento(uid, id)));
 

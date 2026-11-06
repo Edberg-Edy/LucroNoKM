@@ -11,10 +11,12 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { db } from './firebase.js';
 import { gravar } from '../modules/gravacao.js';
+import { exigirServidor } from './leitura.js';
 
 // Todos os meses já gravados, em um objeto: { '2026-09': {...}, '2026-10': {...} }
-export async function listarMeses(uid) {
-  const resultado = await getDocs(collection(db, 'users', uid, 'meses'));
+export async function listarMeses(uid, { completo = false } = {}) {
+  const bruto = await getDocs(collection(db, 'users', uid, 'meses'));
+  const resultado = completo ? exigirServidor(bruto) : bruto; // vazio é normal para quem nunca fechou um mês
   const mapa = {};
   resultado.docs.forEach((achado) => {
     mapa[achado.id] = achado.data();
