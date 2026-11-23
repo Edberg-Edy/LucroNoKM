@@ -1,7 +1,7 @@
 // Teste de fumaça da tela do mês: monta o HTML com dados de exemplo e confere os blocos novos. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { htmlMes, htmlCombustivelSemana } from './visaoMes.js';
+import { htmlMes, htmlCombustivelSemana, htmlGuardarSemana } from './visaoMes.js';
 import { resumoDoMes } from './mes.js';
 import { painelDoMes, combustivelDoPeriodo } from './combustivel.js';
 import { acertoDosFixos, totalFixos } from './fixos.js';
@@ -101,4 +101,15 @@ test('semana sem valor pago: consumo aproximado aparece no lugar do medido', () 
   assert.match(html, /Gasto nos abastecimentos \(estimado\)/);
   assert.match(html, /Consumo aproximado/);
   assert.match(html, /23,2 km\/l/);
+});
+
+test('semana: "guardar" usa os custos fixos previstos da semana inteira e avisa o que falta nos dias restantes', () => {
+  const t = { combustivel: 177.36, manutencao: 131.4, despesas: 10, fixos: 39.24 };
+  const f = { dias: 6, previsto: 54.48, descontado: 39.24, falta: 15.24, semanaAtual: true, diasRestantes: 1, extraPorDia: 15.24 };
+  const html = htmlGuardarSemana(t, f);
+  assert.match(html, /Custos fixos \(6 dias de trabalho\)/);
+  assert.match(html, /R\$\s54,48/);
+  assert.match(html, /R\$\s373,24/); // 177,36 + 131,40 + 10 + 54,48
+  assert.match(html, /custo fixo de cada um sobe para R\$\s15,24/);
+  assert.match(htmlGuardarSemana(t, null), /R\$\s358,00/);
 });

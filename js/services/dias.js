@@ -70,6 +70,12 @@ export async function listarDiasFechadosDoAno(uid, ano) {
   return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() })).filter((d) => d.aberto === false);
 }
 
+// Dias fechados entre duas datas (inclusive). Duas condições no mesmo campo não precisam de índice.
+export async function diasFechadosNoPeriodo(uid, inicio, fim) {
+  const resultado = await getDocs(query(colecao(uid), where('data', '>=', inicio), where('data', '<=', fim)));
+  return resultado.docs.map((achado) => ({ id: achado.id, ...achado.data() })).filter((d) => d.aberto === false);
+}
+
 // Já existe algum dia fechado nesta data? (usado para avisar de data repetida ao editar um dia)
 export async function diasFechadosNaData(uid, data) {
   const resultado = await getDocs(query(colecao(uid), where('data', '==', data)));

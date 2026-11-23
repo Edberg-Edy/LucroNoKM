@@ -1,7 +1,7 @@
 // Testes do histórico semanal. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao, diasPorSemana, metaDaSemana } from './semana.js';
+import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao, diasPorSemana, metaDaSemana, fixosDaSemana, fixoDoDia } from './semana.js';
 
 // Cria um dia fechado de exemplo
 const dia = (data, lucro, gastos, plataformas = [{ nome: 'iFood', valor: 100, corridas: 4 }]) => ({
@@ -154,4 +154,53 @@ test('a semana soma despesas, manutenção e custos fixos dos dias', () => {
   assert.equal(r.totais.despesas, 20);
   assert.equal(r.totais.manutencao, 24);
   assert.equal(r.totais.fixos, 16);
+});
+
+test('custos fixos da semana: o previsto é fixo por dia × dias de trabalho, mesmo com menos dias lançados', () => {
+  const datas = datasDaSemana('2026-11-16');
+  // 26 dias por mês = 6 por semana; R$ 9,08 por dia = R$ 54,48 na semana. Foram lançados 5 dias que descontaram R$ 45,40.
+  const f = fixosDaSemana({ descontado: 45.4, fixoPorDia: 9.08, diasPorMes: 26, datas, hoje: '2026-11-22', hojeFechado: false, diasTrabalhados: 5 });
+  assert.equal(f.dias, 6);
+  assert.equal(Math.round(f.previsto * 100), 5448);
+  assert.equal(Math.round(f.falta * 100), 908);
+  assert.equal(f.diasRestantes, 1);
+  assert.equal(Math.round(f.extraPorDia * 100), 908);
+});
+
+test('custos fixos da semana: o que falta se divide pelos dias de trabalho que restam', () => {
+  const datas = datasDaSemana('2026-11-16');
+  // quinta-feira, 3 dias lançados (seg, ter, qua): restam 3 dias de trabalho; faltam 54,48 − 27,24 = 27,24
+  const f = fixosDaSemana({ descontado: 27.24, fixoPorDia: 9.08, diasPorMes: 26, datas, hoje: '2026-11-19', hojeFechado: false, diasTrabalhados: 3 });
+  assert.equal(f.diasRestantes, 3);
+  assert.equal(Math.round(f.extraPorDia * 100), 908);
+  // folgou na quinta e na sexta: só restam sábado e domingo, e o valor por dia sobe
+  const g = fixosDaSemana({ descontado: 27.24, fixoPorDia: 9.08, diasPorMes: 26, datas, hoje: '2026-11-21', hojeFechado: false, diasTrabalhados: 3 });
+  assert.equal(g.diasRestantes, 2);
+  assert.equal(Math.round(g.extraPorDia * 100), 1362);
+});
+
+test('custos fixos da semana: semana passada completa não falta nada; sem dias e sem custo fixo não calcula', () => {
+  const datas = datasDaSemana('2026-11-09');
+  const cheia = fixosDaSemana({ descontado: 54.48, fixoPorDia: 9.08, diasPorMes: 26, datas, hoje: '2026-11-22', hojeFechado: true, diasTrabalhados: 6 });
+  assert.ok(cheia.falta < 0.005);
+  assert.equal(cheia.extraPorDia, null);
+  const vazia = fixosDaSemana({ descontado: 0, fixoPorDia: 9.08, diasPorMes: 26, datas, hoje: '2026-11-22', hojeFechado: false, diasTrabalhados: 0 });
+  assert.equal(vazia.previsto, 0);
+  assert.equal(fixosDaSemana({ descontado: 0, fixoPorDia: 0, diasPorMes: 26, datas, hoje: '2026-11-22' }), null);
+});
+
+test('custo fixo do dia: semana normal é sempre o fixo por dia; folgar além do previsto sobe o valor dos dias que restam', () => {
+  const base = { fixoPorDia: 9.08, diasPorMes: 26 };
+  const fechado = (data, fixos) => ({ data, calculados: { fixos } });
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-16' }), 9.08); // segunda, primeiro dia
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-18', anteriores: [fechado('2026-11-16', 9.08), fechado('2026-11-17', 9.08)] }), 9.08);
+  // trabalhou seg, ter, qua, qui, sex (45,40) e só chegou no domingo: falta 9,08 em 1 dia
+  const cinco = ['16', '17', '18', '19', '20'].map((d) => fechado('2026-11-' + d, 9.08));
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-22', anteriores: cinco }), 9.08);
+  // só começou a semana no sábado: a semana ainda deve os 54,48 em 2 dias (sáb e dom)
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-21' }), 27.24);
+  // já cobriu o previsto: dia extra não paga mais custo fixo
+  const seis = ['16', '17', '18', '19', '20', '21'].map((d) => fechado('2026-11-' + d, 9.08));
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-22', anteriores: seis }), 0);
+  assert.equal(fixoDoDia({ fixoPorDia: 0, diasPorMes: 26, data: '2026-11-16' }), 0);
 });

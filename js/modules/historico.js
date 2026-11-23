@@ -7,9 +7,10 @@ import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
 import { resumoDoAno } from './ano.js';
 import { htmlAno } from './visaoAno.js';
-import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao, metaDaSemana } from './semana.js';
+import { resumoDaSemana, inicioDaSemana, datasDaSemana, somarDias, variacao, metaDaSemana, fixosDaSemana } from './semana.js';
+import { fixoPorDia } from './calculos.js';
 import { mesDe, somarMeses, mesJaTerminou, resumoDoMes, progressoDoMes } from './mes.js';
-import { htmlMes, htmlCombustivelSemana, htmlMetaSemana } from './visaoMes.js';
+import { htmlMes, htmlCombustivelSemana, htmlMetaSemana, htmlGuardarSemana } from './visaoMes.js';
 import { painelDoMes, combustivelDoPeriodo } from './combustivel.js';
 import { acertoDosFixos, totalFixos } from './fixos.js';
 import { htmlCombustivelMes } from './visaoCombustivel.js';
@@ -270,14 +271,18 @@ export async function telaHistorico(caixa, usuario) {
         ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
       </section>
 
-      <section class="cartao">
-        <h2>Para guardar na semana</h2>
-        ${linha('Combustível', dinheiro(t.combustivel))}
-        ${linha('Manutenção da moto', dinheiro(t.manutencao))}
-        ${linha('Custos fixos', dinheiro(t.fixos))}
-        ${linha('Guardar', dinheiro(t.combustivel + t.manutencao + t.fixos), 'total')}
-        <p class="suave" style="margin-top:8px">As despesas você já pagou no dia: por isso não entram aqui. O que sobra do lucro depois de separar este valor é seu.</p>
-      </section>
+      ${htmlGuardarSemana(
+        t,
+        fixosDaSemana({
+          descontado: t.fixos,
+          fixoPorDia: fixoPorDia(config.fixos, config.diasPorMes),
+          diasPorMes: config.diasPorMes,
+          datas,
+          hoje: hojeISO(),
+          hojeFechado: dias.some((d) => d.data === hojeISO()),
+          diasTrabalhados: t.diasTrabalhados,
+        })
+      )}
 
       <section class="cartao indicadores">
         <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>

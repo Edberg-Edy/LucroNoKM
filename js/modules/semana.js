@@ -85,6 +85,59 @@ export function rankingPlataformas(dias) {
 // Dias de trabalho por semana, tirados do ajuste "Dias trabalhados por mês" (26 dias ≈ 6 por semana; 20 ≈ 5).
 export const diasPorSemana = (diasPorMes) => Math.min(7, Math.max(1, Math.round((diasPorMes * 7) / 30.44)));
 
+// Recalcula sozinho: dias que ainda faltam trabalhar = previstos − já trabalhados, mas nunca mais que os dias do calendário que restam.
+// Folgou sem avisar? Sobram menos dias no calendário, e o valor necessário por dia sobe.
+// "pendente" = ainda falta algo a cobrir (se já cumpriu os dias previstos, o ritmo vale para dias extras).
+function restantesDaSemana({ dias, datas, hoje, hojeFechado, diasTrabalhados, pendente }) {
+  const indice = datas.indexOf(hoje);
+  if (indice < 0) return { diasRestantes: 0, extra: false };
+  const corridos = 7 - indice - (hojeFechado ? 1 : 0); // dias do calendário que ainda restam
+  let diasRestantes = Math.min(corridos, Math.max(0, dias - diasTrabalhados));
+  let extra = false;
+  if (diasRestantes === 0 && pendente && corridos > 0) {
+    diasRestantes = corridos;
+    extra = true;
+  }
+  return { diasRestantes, extra };
+}
+
+// Custo fixo que cabe a UM dia ao fechá-lo. O mês cobra o valor inteiro, trabalhando muito ou pouco: o que a semana
+// ainda deve de custo fixo (previsto − já descontado nos dias anteriores) se divide pelos dias de trabalho que restam.
+// Semana normal: sempre o fixo por dia (ex.: R$ 9,08). Folgou além do previsto: sobram menos dias e o valor sobe.
+//   anteriores = dias fechados da mesma semana com data antes deste dia
+export function fixoDoDia({ data, fixoPorDia, diasPorMes, anteriores = [] }) {
+  if (!(fixoPorDia > 0) || !(diasPorMes > 0)) return fixoPorDia > 0 ? fixoPorDia : 0;
+  const dias = diasPorSemana(diasPorMes);
+  const indice = datasDaSemana(inicioDaSemana(data)).indexOf(data);
+  const descontado = soma(anteriores, (d) => d.calculados.fixos || 0);
+  const falta = Math.max(0, fixoPorDia * dias - descontado);
+  const corridos = 7 - indice; // este dia e os que restam até domingo
+  const restantes = Math.max(1, Math.min(corridos, dias - anteriores.length));
+  return Math.round((falta / restantes) * 100) / 100;
+}
+
+// Custos fixos da semana: o mês cobra o valor inteiro mesmo que você trabalhe menos dias. Por isso o previsto é
+// (fixo por dia) × (dias de trabalho da semana), e o que os dias lançados já descontaram é comparado com ele.
+// Faltou descontar? Esse resto vai para os dias de trabalho que sobram na semana (o "guardar" sobe nesses dias).
+export function fixosDaSemana({ descontado, fixoPorDia, diasPorMes, datas, hoje, hojeFechado, diasTrabalhados = 0 }) {
+  if (!(fixoPorDia > 0) || !(diasPorMes > 0)) return null;
+  const dias = diasPorSemana(diasPorMes);
+  const semanaAtual = datas.includes(hoje);
+  // semana passada sem nenhum dia lançado: não havia o que cobrar (ex.: antes de começar a usar o app)
+  const previsto = diasTrabalhados === 0 && !semanaAtual ? 0 : fixoPorDia * dias;
+  const falta = Math.max(0, previsto - descontado);
+  const { diasRestantes } = restantesDaSemana({ dias, datas, hoje, hojeFechado, diasTrabalhados, pendente: falta > 0 });
+  return {
+    dias,
+    previsto,
+    descontado,
+    falta,
+    semanaAtual,
+    diasRestantes,
+    extraPorDia: semanaAtual && falta > 0.005 && diasRestantes > 0 ? falta / diasRestantes : null,
+  };
+}
+
 // Meta da semana = meta diária × dias de trabalho por semana. Compara com o lucro já feito.
 //   datas = as 7 datas da semana na tela; hoje = data de hoje; hojeFechado = o dia de hoje já foi lançado?
 //   diasTrabalhados = dias já lançados nesta semana
@@ -95,21 +148,9 @@ export function metaDaSemana({ lucro, meta, diasPorMes, datas, hoje, hojeFechado
   const dias = diasPorSemana(diasPorMes);
   const total = meta * dias;
   const falta = Math.max(0, total - lucro);
-  const indice = datas.indexOf(hoje);
-  const semanaAtual = indice >= 0;
+  const semanaAtual = datas.includes(hoje);
 
-  // Recalcula sozinho: dias que ainda faltam trabalhar = previstos − já trabalhados, mas nunca mais que os dias do calendário que restam.
-  // Folgou sem avisar? Sobram menos dias no calendário, e o lucro necessário por dia sobe.
-  let diasRestantes = 0;
-  let extra = false;
-  if (semanaAtual) {
-    const corridos = 7 - indice - (hojeFechado ? 1 : 0); // dias do calendário que ainda restam
-    diasRestantes = Math.min(corridos, Math.max(0, dias - diasTrabalhados));
-    if (diasRestantes === 0 && falta > 0 && corridos > 0) {
-      diasRestantes = corridos; // já fez os dias previstos e não bateu: o ritmo vale para dias extras
-      extra = true;
-    }
-  }
+  const { diasRestantes, extra } = restantesDaSemana({ dias, datas, hoje, hojeFechado, diasTrabalhados, pendente: falta > 0 });
 
   return {
     dias,

@@ -32,7 +32,8 @@ export function htmlResultado(dia) {
     : '';
 
   // O combustível entra no que se guarda: ele sai agora no cálculo do dia, mas o abastecimento acontece depois.
-  const totalGuardar = c.combustivel + c.guardar;
+  // As despesas também: foram pagas com o dinheiro da moto, então precisam ser repostas.
+  const totalGuardar = c.combustivel + c.guardar + c.despesas;
 
   const prejuizo =
     c.lucro < 0 ? ' O dia não cobriu os custos: parte do que você guardar vai sair do seu bolso.' : '';
@@ -82,8 +83,8 @@ export function htmlResultado(dia) {
       ${linha('Faturamento', dinheiro(c.faturamento))}
       ${linha('Menos os gastos', '− ' + dinheiro(c.gastos))}
       ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
-      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(totalGuardar), 'total')}
-      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.). As despesas do dia você já pagou. Só o que sobra é seu para gastar.${prejuizo}</p>
+      ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(totalGuardar), 'total')}
+      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto, ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.) e ${dinheiro(c.despesas)} para repor as despesas que saíram do dinheiro da moto. Só o que sobra é seu para gastar.${prejuizo}</p>
     </section>
     </div>
     </div>`;

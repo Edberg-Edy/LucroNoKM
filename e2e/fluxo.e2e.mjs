@@ -105,7 +105,7 @@ test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões'
 
   await semViolacoes('resultado do dia');
   const texto = await pagina.innerText('#conteudo');
-  for (const t of ['Seu dinheiro do dia', 'Gastou no dia', 'Para guardar', 'Total gasto', 'Lucro líquido', 'Livre para gastar', 'Guardar (combustível, moto e custos fixos)']) {
+  for (const t of ['Seu dinheiro do dia', 'Gastou no dia', 'Para guardar', 'Total gasto', 'Lucro líquido', 'Livre para gastar', 'Guardar (combustível, moto, custos fixos e despesas)']) {
     assert.ok(texto.includes(t), `faltou "${t}" no resultado do dia`);
   }
   assert.match(texto, /Faturamento\s+R\$\s*180,00/);

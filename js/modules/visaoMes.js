@@ -71,6 +71,34 @@ export function htmlMetaSemana(m) {
       </section>`;
 }
 
+// Card "Para guardar na semana". t = totais da semana; f = resultado de fixosDaSemana (ou null sem custos fixos).
+// Os custos fixos entram pelo valor previsto da semana inteira: folgar não diminui a conta do mês.
+export function htmlGuardarSemana(t, f) {
+  const fixos = f ? f.previsto : t.fixos;
+  const total = t.combustivel + t.manutencao + t.despesas + fixos;
+  const pl = (n) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
+  let nota = 'As despesas entram porque saíram do dinheiro da moto e precisam ser repostas. O que sobra do lucro depois de separar este valor é seu.';
+  if (f && f.falta > 0.005) {
+    if (f.semanaAtual && f.extraPorDia !== null) {
+      nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; faltam ${dinheiro(f.falta)}. Restam ${pl(f.diasRestantes)} de trabalho até domingo: o custo fixo de cada um sobe para ${dinheiro(f.extraPorDia)}. Folgou além do previsto? O valor por dia sobe sozinho.`;
+    } else if (f.semanaAtual) {
+      nota = `Faltam ${dinheiro(f.falta)} de custos fixos e não restam dias de trabalho nesta semana: separe do lucro que já tem.`;
+    } else {
+      nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; ficaram faltando ${dinheiro(f.falta)}. O mês cobra o valor inteiro, mesmo com menos dias trabalhados.`;
+    }
+  }
+  return `
+      <section class="cartao">
+        <h2>Para guardar na semana</h2>
+        ${linha('Combustível', dinheiro(t.combustivel))}
+        ${linha('Manutenção da moto', dinheiro(t.manutencao))}
+        ${linha('Despesas', dinheiro(t.despesas))}
+        ${linha(f ? `Custos fixos (${pl(f.dias)} de trabalho)` : 'Custos fixos', dinheiro(fixos))}
+        ${linha('Guardar na semana', dinheiro(total), 'total')}
+        <p class="suave" style="margin-top:8px">${nota}</p>
+      </section>`;
+}
+
 // Card de combustível da semana (resultado de combustivelDoPeriodo): quatro números, sem repetir o que já está nas contas.
 export function htmlCombustivelSemana(c) {
   const real = c.real;
@@ -208,10 +236,10 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
     <section class="cartao">
       <h2>Seu dinheiro do mês</h2>
       ${linha('Livre para gastar', dinheiro(t.lucro), 'total')}
-      ${linha('Guardar (combustível, moto e custos fixos)', dinheiro(t.guardar + t.combustivel), 'total')}
+      ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(t.guardar + t.combustivel + t.despesas), 'total')}
       ${
         temDias
-          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto e ${dinheiro(t.fixos)} para os custos fixos (DAS, internet etc.). As despesas você já pagou. Só o que sobra é seu para gastar.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
+          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel + t.despesas)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto, ${dinheiro(t.fixos)} para os custos fixos (DAS, internet etc.) e ${dinheiro(t.despesas)} para repor as despesas. Só o que sobra é seu para gastar.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
           : ''
       }
     </section>

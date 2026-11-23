@@ -38,6 +38,8 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 32 | Lista de dias em três linhas (Seg · 16/11 · Lucro / Ganhos / Gastos), botão voltar do celular fecha o detalhe do dia, card de abastecimento alinhado | ✅ v0.32 |
 | 33 | Cards de combustível mais simples (semana: 4 números; mês: consumo único e explicação recolhida) | ✅ v0.33 |
 | 34 | Semana: resumo em linhas (faturamento, gastos por tipo, lucro) e card "Para guardar" separado, igual ao dia | ✅ v0.34 |
+| 35 | Custos fixos da semana pelo valor previsto (fixo por dia × dias de trabalho); o que faltar sobe o guardar dos dias restantes | ✅ v0.35 |
+| 36 | Custo fixo do dia se ajusta aos dias que restam na semana (como a meta) e as despesas entram no valor a guardar | ✅ v0.36 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |
@@ -46,7 +48,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **195 testes** passando (`npm test`) + 10 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v33`.
+Estado atual: **200 testes** passando (`npm test`) + 10 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v35`.
 
 ## Decisões recentes
 

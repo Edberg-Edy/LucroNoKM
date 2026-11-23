@@ -26,10 +26,10 @@ test('dinheiro do dia separa combustível, despesas, manutenção e custos fixos
   assert.match(html, /Menos os gastos<\/span><b>− R\$\s48,52/);
 });
 
-test('guardar inclui o combustível: R$ 20,00 + R$ 15,30 + R$ 7,54 = R$ 42,84', () => {
+test('guardar inclui combustível e despesas: R$ 20,00 + R$ 15,30 + R$ 7,54 + R$ 5,68 = R$ 48,52', () => {
   const html = htmlResultado(dia);
-  assert.match(html, /Guardar \(combustível, moto e custos fixos\)<\/span><b>R\$\s42,84/);
-  assert.match(html, /Separe R\$\s42,84 deste dia: R\$\s20,00 para o próximo abastecimento, R\$\s15,30 para a moto e R\$\s7,54 para os custos fixos/);
+  assert.match(html, /Guardar \(combustível, moto, custos fixos e despesas\)<\/span><b>R\$\s48,52/);
+  assert.match(html, /Separe R\$\s48,52 deste dia: R\$\s20,00 para o próximo abastecimento, R\$\s15,30 para a moto, R\$\s7,54 para os custos fixos \(DAS, internet etc.\) e R\$\s5,68 para repor as despesas/);
 });
 
 test('dia no prejuízo ainda avisa que o guardado sai do bolso', () => {
