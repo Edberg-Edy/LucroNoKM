@@ -15,13 +15,14 @@ export function htmlResultado(dia) {
     vermelho: 'Dia no prejuízo',
   }[c.status];
 
+  // Tudo em lucro, em pares: o total à esquerda e o lucro por unidade à direita
   const indicadores = [
-    ['Ganho por km', dinheiro(c.ganhoPorKm)],
-    ['Lucro por hora', c.lucroPorHora === null ? '—' : dinheiro(c.lucroPorHora)],
     ['Km rodados', textoKm(c.km)],
+    ['Lucro por km', c.km > 0 ? dinheiro(c.lucro / c.km) : '—'],
     ['Horas', dia.horas ? textoHoras(dia.horas) : '—'],
+    ['Lucro por hora', c.lucroPorHora === null ? '—' : dinheiro(c.lucroPorHora)],
     ['Corridas', c.corridas || '—'],
-    ['Ganho por corrida', c.ganhoPorCorrida === null ? '—' : dinheiro(c.ganhoPorCorrida)],
+    ['Lucro por corrida', c.corridas > 0 ? dinheiro(c.lucro / c.corridas) : '—'],
   ];
 
   const faltas = [];

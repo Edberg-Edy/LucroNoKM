@@ -36,3 +36,11 @@ test('dia no prejuízo ainda avisa que o guardado sai do bolso', () => {
   const ruim = { ...dia, calculados: { ...dia.calculados, lucro: -10, livre: -10, status: 'vermelho' } };
   assert.match(htmlResultado(ruim), /não cobriu os custos/);
 });
+
+test('indicadores do dia vêm em pares, todos em lucro: R$ 162,67 em 120 km e 10 corridas', () => {
+  const html = htmlResultado(dia);
+  assert.match(html, /Km rodados<\/span><b>120<\/b><\/div><div><span>Lucro por km<\/span><b>R\$\s1,36/);
+  assert.match(html, /Horas<\/span><b>[^<]+<\/b><\/div><div><span>Lucro por hora<\/span><b>R\$\s20,33/);
+  assert.match(html, /Corridas<\/span><b>10<\/b><\/div><div><span>Lucro por corrida<\/span><b>R\$\s16,27/);
+  assert.doesNotMatch(html, /Ganho por km|Ganho por corrida/);
+});
