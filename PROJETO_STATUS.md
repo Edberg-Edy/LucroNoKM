@@ -34,6 +34,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 19 | Dia em três cartões: dinheiro do dia (plataformas), gastou no dia (combustível, despesas, manutenção, fixos) e para guardar (inclui combustível) | ✅ v0.19 |
 | 29 | Teste de segurança no navegador: texto malicioso nos campos livres nunca vira HTML (checado também removendo a proteção de propósito) | ✅ v0.29 |
 | 30 | Correções da revisão de código: toque duplo, leitura offline/backup, mês fechado no abastecimento, validações | ✅ v0.30 |
+| 31 | Ajustes pedidos no uso real: toque na barra da semana abre o dia (com Editar), abastecimento sem dia aberto, valores em R$ sem quebra de linha, textos Ganhos/Gastos padronizados | ✅ v0.31 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |
@@ -42,7 +43,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **194 testes** passando (`npm test`) + 9 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v29`.
+Estado atual: **194 testes** passando (`npm test`) + 10 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v30`.
 
 ## Decisões recentes
 

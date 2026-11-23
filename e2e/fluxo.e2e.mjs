@@ -271,3 +271,28 @@ test('toque duplo não cria dois dias abertos nem dois abastecimentos', async ()
   assert.equal(await contar('/abastecimentos/', null, null), 1, 'o abastecimento foi criado duas vezes');
   assert.deepEqual(erros, []);
 });
+
+test('toque na barra da semana abre o dia com Editar; abastecimento sem dia aberto', async () => {
+  // dados de mentira vivem na página: semeia um dia fechado de hoje a partir de um dia real salvo em regras/
+  const reais = JSON.parse(await readFile(join(raiz, 'regras/documentos-reais.json'), 'utf8'));
+  const modelo = reais.find(([c, d]) => c.includes('/dias/') && d.aberto === false)[1];
+  await pagina.evaluate(([m, data]) => {
+    for (const [c, d] of [...window.__dadosFalsos]) if (c.includes('/dias/') && d.aberto) window.__dadosFalsos.delete(c); // sem dia aberto
+    window.__dadosFalsos.set('users/u-e2e/dias/semeado', { ...m, data });
+    location.hash = 'historico';
+  }, [modelo, hoje()]);
+  await pagina.waitForSelector('.barra-dia');
+  await pagina.click(`.barra-dia[data-dia="${hoje()}"]`);
+  await pagina.waitForSelector('text=Editar este dia');
+  assert.ok((await pagina.innerText('#conteudo')).includes('Seu dinheiro do dia'));
+  assert.equal((await pagina.innerText('#conteudo')).includes('lançado aqui'), false);
+
+  await pagina.click('#abas [data-aba="hoje"]');
+  await pagina.waitForSelector('[data-acao="abrir"]');
+  await pagina.waitForSelector('#lugarAbastecer [data-acao="registrar"]');
+  await pagina.fill('#lugarAbastecer [data-f="odometro"]', '3000');
+  await pagina.fill('#lugarAbastecer [data-f="litros"]', '3');
+  await pagina.click('#lugarAbastecer [data-acao="registrar"]');
+  await pagina.waitForSelector('text=Abastecimento registrado');
+  assert.deepEqual(erros, []);
+});

@@ -51,7 +51,7 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
 
     <section class="cartao">
       <h2>Limite do MEI em ${ano}</h2>
-      ${linha('Faturado no ano (lançado aqui)', dinheiro(t.faturamento))}
+      ${linha('Faturado no ano', dinheiro(t.faturamento))}
       ${linha('Limite anual', dinheiro(limite))}
       <div class="medidor" role="img" aria-label="${Math.round(mei.percentual)}% do limite usado"><i style="width:${mei.percentual}%"></i></div>
       <p class="suave">${

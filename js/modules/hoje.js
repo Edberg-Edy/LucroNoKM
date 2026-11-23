@@ -58,12 +58,12 @@ export async function telaHoje(raiz, usuario) {
   let confirmarOdometroInicial = null; // odômetro inicial que o usuário já confirmou, mesmo com salto grande
   let resultado = null; // dia recém-fechado, mostrado até o usuário tocar em "Lançar outro dia"
 
-  // Card de abastecimento: fica dentro do dia aberto (abaixo das despesas), na data do dia. Sem dia aberto, só aparece
-  // quando o Histórico pede para editar um abastecimento. Carrega por conta própria, sem atrasar o dia.
+  // Card de abastecimento: fica dentro do dia aberto (abaixo das despesas), na data do dia. Sem dia aberto, aparece
+  // abaixo de "Abrir o dia", com campo de data, para lançar um abastecimento avulso. Carrega por conta própria, sem atrasar o dia.
   const noAbastecer = document.createElement('div');
   const posicionarAbastecer = () => {
     const lugar = caixa.querySelector('#lugarAbastecer');
-    const mostrar = lugar && ((dia && !resultado) || noAbastecer.dataset.editando === '1');
+    const mostrar = lugar && (!resultado || noAbastecer.dataset.editando === '1');
     if (mostrar) lugar.appendChild(noAbastecer);
     else noAbastecer.remove();
   };

@@ -789,3 +789,6 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Etapa 31: valores em R$ nunca quebram de linha ---- */
+.nq, .resumo b, .indicadores b { white-space: nowrap; }

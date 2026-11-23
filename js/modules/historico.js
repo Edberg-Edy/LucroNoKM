@@ -102,7 +102,10 @@ export async function telaHistorico(caixa, usuario) {
 
   function desenhar() {
     if (verDia) {
-      caixa.innerHTML = `<button type="button" class="ghost" data-acao="voltar">← Voltar</button>${htmlResultado(verDia)}`;
+      const podeEditar = !travado(verDia);
+      caixa.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><button type="button" class="ghost" data-acao="voltar">← Voltar</button>${
+        podeEditar ? `<button type="button" class="ghost" data-editar="${verDia.id}">✎ Editar este dia</button>` : '<span class="suave">🔒 Mês fechado</span>'
+      }</div><p class="erro" role="alert">${esc(aviso)}</p>${htmlResultado(verDia)}`;
       return;
     }
 
@@ -278,8 +281,8 @@ export async function telaHistorico(caixa, usuario) {
                   (d) => `
           <div class="item-dia">
             <button type="button" class="ver" data-ver="${d.id}">
-              <b>${dataBR(d.data).slice(0, 5)}</b> · lucro ${dinheiro(d.calculados.lucro)}<br>
-              <small>ganho ${dinheiro(d.calculados.faturamento)} · gasto ${dinheiro(d.calculados.gastos)}</small>
+              <b>${dataBR(d.data).slice(0, 5)}</b> · Lucro <span class="nq">${dinheiro(d.calculados.lucro)}</span><br>
+              <small>Ganhos <span class="nq">${dinheiro(d.calculados.faturamento)}</span> · Gastos <span class="nq">${dinheiro(d.calculados.gastos)}</span></small>
             </button>
             <span class="selo ${d.calculados.status}">${selo[d.calculados.status]}</span>
             ${
@@ -299,7 +302,7 @@ export async function telaHistorico(caixa, usuario) {
       <div class="col d">
       <section class="cartao">
         <h2>Limite do MEI em ${ano}</h2>
-        ${linha('Faturado no ano (lançado aqui)', dinheiro(faturado))}
+        ${linha('Faturado no ano', dinheiro(faturado))}
         ${linha('Limite anual', dinheiro(config.limiteMei))}
         <div class="medidor" role="img" aria-label="${Math.round(mei.percentual)}% do limite usado"><i style="width:${mei.percentual}%"></i></div>
         <p class="suave">${
@@ -495,7 +498,10 @@ export async function telaHistorico(caixa, usuario) {
         selecionado = null;
       });
     } else if (botao.dataset.dia) {
-      selecionado = selecionado === botao.dataset.dia ? null : botao.dataset.dia;
+      // Toque na barra: abre o dia fechado dessa data (se não houver, só marca o dia na lista)
+      const doDia = dias.find((d) => d.data === botao.dataset.dia);
+      if (doDia) verDia = doDia;
+      else selecionado = selecionado === botao.dataset.dia ? null : botao.dataset.dia;
     } else if (botao.dataset.ver) {
       verDia = dias.find((d) => d.id === botao.dataset.ver);
     } else if (botao.dataset.acao === 'voltar') {
