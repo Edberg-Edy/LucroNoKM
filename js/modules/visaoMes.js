@@ -71,25 +71,26 @@ export function htmlMetaSemana(m) {
       </section>`;
 }
 
-// Card de combustível da semana (resultado de combustivelDoPeriodo). Mesmo estilo dos indicadores.
+// Card de combustível da semana (resultado de combustivelDoPeriodo): quatro números, sem repetir o que já está nas contas.
 export function htmlCombustivelSemana(c) {
   const real = c.real;
+  const consumo = real
+    ? real.kmPorLitro !== null
+      ? ['Consumo medido', kmL(real.kmPorLitro) + ' km/l']
+      : real.aproximado
+        ? ['Consumo aproximado', kmL(real.aproximado.kmPorLitro) + ' km/l']
+        : ['Km por litro nas contas', c.kmPorLitroUsado === null ? '—' : kmL(c.kmPorLitroUsado) + ' km/l']
+    : ['Km por litro nas contas', c.kmPorLitroUsado === null ? '—' : kmL(c.kmPorLitroUsado) + ' km/l'];
+  const gasto = real
+    ? [`Gasto nos abastecimentos${real.valorEstimado ? ' (estimado)' : ''}`, dinheiro(real.valor)]
+    : ['Combustível usado (estimado)', dinheiro(c.estimadoValor)];
+  const litros = real ? ['Litros abastecidos', litrosBR(real.litros) + ' L'] : ['Litros usados (estimado)', litrosBR(c.estimadoLitros) + ' L'];
   return `
       <section class="cartao indicadores">
-        <div><span>Combustível usado (estimado)</span><b>${dinheiro(c.estimadoValor)}</b></div>
-        <div><span>Litros usados (estimado)</span><b>${litrosBR(c.estimadoLitros)} L</b></div>
+        <div><span>${gasto[0]}</span><b>${gasto[1]}</b></div>
+        <div><span>${litros[0]}</span><b>${litros[1]}</b></div>
+        <div><span>${consumo[0]}</span><b>${consumo[1]}</b></div>
         <div><span>Combustível por km</span><b>${c.porKm === null ? '—' : dinheiro3(c.porKm)}</b></div>
-        <div><span>Km por litro nas contas</span><b>${c.kmPorLitroUsado === null ? '—' : kmL(c.kmPorLitroUsado)}</b></div>
-        ${
-          real
-            ? `<div><span>Gasto nos abastecimentos${real.valorEstimado ? ' (estimado)' : ''}</span><b>${dinheiro(real.valor)}</b></div>
-        <div><span>Litros abastecidos</span><b>${litrosBR(real.litros)} L</b></div>
-        ${real.precoMedio === null ? '' : `<div><span>Preço médio do litro</span><b>${dinheiro(real.precoMedio)}</b></div>`}
-        <div><span>${real.kmPorLitro === null && real.aproximado ? 'Consumo aproximado' : 'Consumo medido'}</span><b>${
-                real.kmPorLitro !== null ? kmL(real.kmPorLitro) + ' km/l' : real.aproximado ? kmL(real.aproximado.kmPorLitro) + ' km/l' : '—'
-              }</b></div>`
-            : ''
-        }
       </section>`;
 }
 
@@ -123,11 +124,17 @@ function htmlCombustivel(c) {
       ${linha('Estimado pelos dias fechados', dinheiro(c.estimado))}
       ${linha(mais ? 'Gastou a mais que o estimado' : 'Gastou a menos que o estimado', dinheiro(Math.abs(c.diferenca)))}
       ${linha('Litros abastecidos', litrosBR(c.litros) + ' L')}
-      ${c.precoMedio === null ? '' : linha('Preço médio do litro', dinheiro(c.precoMedio))}
-      ${linha('Consumo medido (tanque a tanque)', c.kmPorLitro === null ? '—' : kmL(c.kmPorLitro) + ' km/l')}
-      ${linha('Consumo aproximado (estimativa)', c.aproximado ? kmL(c.aproximado.kmPorLitro) + ' km/l' : '—')}
+      ${
+        c.kmPorLitro !== null
+          ? linha('Consumo medido (tanque a tanque)', kmL(c.kmPorLitro) + ' km/l')
+          : linha('Consumo aproximado (estimativa)', c.aproximado ? kmL(c.aproximado.kmPorLitro) + ' km/l' : '—')
+      }
       ${linha('Custo real por km', c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm))}
-      <p class="suave">${dica}O gasto soma o que foi abastecido no mês: o abastecimento dos últimos dias pode ser para os primeiros dias do mês seguinte. O consumo medido só aparece com dois abastecimentos em que você marcou "Completei o tanque". O aproximado usa todos os abastecimentos (km rodados ÷ litros) e fica mais certo a cada mês.</p>
+      ${dica ? `<p class="suave">${dica.trim()}</p>` : ''}
+      <details class="como">
+        <summary>Como é calculado?</summary>
+        <p class="suave">O gasto soma o que foi abastecido no mês: o abastecimento dos últimos dias pode ser para os primeiros dias do mês seguinte. O consumo medido só aparece com dois abastecimentos em que você marcou "Completei o tanque". O aproximado usa todos os abastecimentos (km rodados ÷ litros) e fica mais certo a cada mês.</p>
+      </details>
     </section>`;
 }
 

@@ -811,3 +811,5 @@ a {
 @media (min-width: 900px) {
   .estreito + #lugarAbastecer { max-width: 520px; margin-left: auto; margin-right: auto; }
 }
+
+.como summary { cursor: pointer; color: var(--destaque); font-weight: 600; padding: 8px 0; }
