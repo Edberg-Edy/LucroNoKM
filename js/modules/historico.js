@@ -19,10 +19,17 @@ import { hojeISO, dataBR, dinheiro, esc } from './formatos.js';
 
 const linha = (rotulo, valor) => `<div class="resumo"><span>${rotulo}</span><b>${valor}</b></div>`;
 const selo = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
+const SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const nomeDoDia = (data) => SEMANA[new Date(data + 'T12:00:00').getDay()];
+
+// O botão "voltar" do celular deve sair do detalhe do dia (e não do Histórico): cada detalhe aberto vira uma entrada do navegador.
+let aoVoltarDoNavegador = null;
 
 // "caixa" é o espaço da tela onde a aba aparece; "usuario" é quem está logado.
 export async function telaHistorico(caixa, usuario) {
   caixa.innerHTML = '<p class="suave">Carregando histórico…</p>';
+  if (aoVoltarDoNavegador) window.removeEventListener('popstate', aoVoltarDoNavegador);
+  let verEmpilhado = false; // o detalhe aberto tem uma entrada própria no histórico do navegador
 
   let dias; // só os anos já carregados (veja garantirDaTela)
   let config;
@@ -48,6 +55,25 @@ export async function telaHistorico(caixa, usuario) {
   let inicio = semanaAtual; // segunda-feira da semana que está na tela
   let selecionado = null; // dia tocado no gráfico (filtra a lista)
   let verDia = null; // dia aberto em detalhe
+  const abrirDetalhe = (d) => {
+    verDia = d;
+    if (!verEmpilhado) {
+      try {
+        history.pushState({ detalheDoDia: true }, '');
+        verEmpilhado = true;
+      } catch (e) {
+        // sem histórico: o botão Voltar do app continua funcionando
+      }
+    }
+  };
+  aoVoltarDoNavegador = () => {
+    verEmpilhado = false;
+    if (verDia) {
+      verDia = null;
+      desenhar();
+    }
+  };
+  window.addEventListener('popstate', aoVoltarDoNavegador);
   let aviso = ''; // mensagem curta (ex.: dia excluído)
   if (dias === null) {
     dias = [];
@@ -280,17 +306,22 @@ export async function telaHistorico(caixa, usuario) {
                 .map(
                   (d) => `
           <div class="item-dia">
-            <button type="button" class="ver" data-ver="${d.id}">
-              <b>${dataBR(d.data).slice(0, 5)}</b> · Lucro <span class="nq">${dinheiro(d.calculados.lucro)}</span><br>
-              <small>Ganhos <span class="nq">${dinheiro(d.calculados.faturamento)}</span> · Gastos <span class="nq">${dinheiro(d.calculados.gastos)}</span></small>
+            <button type="button" class="ver titulo" data-ver="${d.id}">
+              <b>${nomeDoDia(d.data)} · ${dataBR(d.data).slice(0, 5)}</b> · Lucro <span class="nq">${dinheiro(d.calculados.lucro)}</span>
             </button>
-            <span class="selo ${d.calculados.status}">${selo[d.calculados.status]}</span>
-            ${
-              travado(d)
-                ? '<span class="cadeado" role="img" aria-label="Mês fechado">🔒</span>'
-                : `<button type="button" class="x ed" data-editar="${d.id}" aria-label="Editar dia">✎</button>
-            <button type="button" class="x ${confirmarExcluir === d.id ? 'cfm' : ''}" data-excluir="${d.id}" aria-label="Excluir dia">${confirmarExcluir === d.id ? 'Excluir?' : '✕'}</button>`
-            }
+            <button type="button" class="ver detalhe" data-ver="${d.id}">
+              <small>Ganhos <span class="nq">${dinheiro(d.calculados.faturamento)}</span></small>
+              <small>Gastos <span class="nq">${dinheiro(d.calculados.gastos)}</span></small>
+            </button>
+            <div class="acoes">
+              <span class="selo ${d.calculados.status}">${selo[d.calculados.status]}</span>
+              ${
+                travado(d)
+                  ? '<span class="cadeado" role="img" aria-label="Mês fechado">🔒</span>'
+                  : `<button type="button" class="x ed" data-editar="${d.id}" aria-label="Editar dia">✎</button>
+              <button type="button" class="x ${confirmarExcluir === d.id ? 'cfm' : ''}" data-excluir="${d.id}" aria-label="Excluir dia">${confirmarExcluir === d.id ? 'Excluir?' : '✕'}</button>`
+              }
+            </div>
           </div>`
                 )
                 .join('')
@@ -500,11 +531,12 @@ export async function telaHistorico(caixa, usuario) {
     } else if (botao.dataset.dia) {
       // Toque na barra: abre o dia fechado dessa data (se não houver, só marca o dia na lista)
       const doDia = dias.find((d) => d.data === botao.dataset.dia);
-      if (doDia) verDia = doDia;
+      if (doDia) abrirDetalhe(doDia);
       else selecionado = selecionado === botao.dataset.dia ? null : botao.dataset.dia;
     } else if (botao.dataset.ver) {
-      verDia = dias.find((d) => d.id === botao.dataset.ver);
+      abrirDetalhe(dias.find((d) => d.id === botao.dataset.ver));
     } else if (botao.dataset.acao === 'voltar') {
+      if (verEmpilhado) return history.back(); // o popstate fecha o detalhe
       verDia = null;
     } else return;
 

@@ -286,6 +286,10 @@ test('toque na barra da semana abre o dia com Editar; abastecimento sem dia aber
   await pagina.waitForSelector('text=Editar este dia');
   assert.ok((await pagina.innerText('#conteudo')).includes('Seu dinheiro do dia'));
   assert.equal((await pagina.innerText('#conteudo')).includes('lançado aqui'), false);
+  // botão voltar do celular fecha o detalhe e continua no Histórico
+  await pagina.goBack();
+  await pagina.waitForSelector('.barra-dia');
+  assert.match(pagina.url(), /#historico$/);
 
   await pagina.click('#abas [data-aba="hoje"]');
   await pagina.waitForSelector('[data-acao="abrir"]');

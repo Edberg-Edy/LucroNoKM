@@ -792,3 +792,22 @@ a {
 
 /* ---- Etapa 31: valores em R$ nunca quebram de linha ---- */
 .nq, .resumo b, .indicadores b { white-space: nowrap; }
+
+/* Lista de dias: título em cima; ganhos e gastos à esquerda; selo e botões à direita, centralizados na altura dos dois */
+.item-dia {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+}
+.item-dia .titulo { grid-column: 1 / -1; }
+.item-dia .detalhe { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 2px; }
+.item-dia .acoes { grid-column: 2; grid-row: 2; display: flex; align-items: center; gap: 4px; }
+.item-dia .acoes .x { width: 40px; }
+.item-dia .detalhe small { font-size: 16px; }
+
+/* Abastecimento avulso (sem dia aberto) com a mesma largura do cartão "Abrir o dia" */
+@media (min-width: 900px) {
+  .estreito + #lugarAbastecer { max-width: 520px; margin-left: auto; margin-right: auto; }
+}
