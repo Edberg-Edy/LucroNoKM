@@ -50,6 +50,9 @@ export function resumoDaSemana(dias, datas) {
     gastos: soma(porDia, (d) => d.gastos),
     lucro,
     combustivel: soma(daSemana, (d) => d.calculados.combustivel || 0),
+    despesas: soma(daSemana, (d) => d.calculados.despesas || 0),
+    manutencao: soma(daSemana, (d) => d.calculados.manutencao || 0),
+    fixos: soma(daSemana, (d) => d.calculados.fixos || 0),
     guardar: soma(daSemana, (d) => d.calculados.guardar), // moto + custos fixos (o combustível entra por cima nas telas)
     km: soma(daSemana, (d) => d.calculados.km),
     diasTrabalhados,

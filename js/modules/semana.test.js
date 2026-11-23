@@ -147,3 +147,11 @@ test('a semana soma o combustível dos dias (a tela o soma ao que se guarda)', (
   assert.equal(r.totais.combustivel, 35.5);
   assert.equal(r.totais.guardar, 40); // 20 + 20 de cada dia: moto e custos fixos
 });
+
+test('a semana soma despesas, manutenção e custos fixos dos dias', () => {
+  const comItens = (data) => ({ ...dia(data, 100, 40), calculados: { ...dia(data, 100, 40).calculados, despesas: 10, manutencao: 12, fixos: 8 } });
+  const r = resumoDaSemana([comItens('2026-11-02'), comItens('2026-11-03')], datasDaSemana('2026-11-02'));
+  assert.equal(r.totais.despesas, 20);
+  assert.equal(r.totais.manutencao, 24);
+  assert.equal(r.totais.fixos, 16);
+});

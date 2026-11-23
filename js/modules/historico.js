@@ -17,7 +17,7 @@ import { htmlGraficoLucro, htmlGraficoGastos, maiorValor } from './graficos.js';
 import { htmlResultado } from './resultado.js';
 import { hojeISO, dataBR, dinheiro, esc } from './formatos.js';
 
-const linha = (rotulo, valor) => `<div class="resumo"><span>${rotulo}</span><b>${valor}</b></div>`;
+const linha = (rotulo, valor, destaque = '') => `<div class="resumo ${destaque}"><span>${rotulo}</span><b>${valor}</b></div>`;
 const selo = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
 const SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const nomeDoDia = (data) => SEMANA[new Date(data + 'T12:00:00').getDay()];
@@ -259,15 +259,31 @@ export async function telaHistorico(caixa, usuario) {
       </div>
 
       <div class="col b">
+      <section class="cartao">
+        <h2>Resumo da semana</h2>
+        ${linha('Faturamento', dinheiro(t.faturamento))}
+        ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
+        ${linha('Despesas', '− ' + dinheiro(t.despesas))}
+        ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
+        ${linha('Custos fixos (rateio)', '− ' + dinheiro(t.fixos))}
+        ${linha('Total gasto', '− ' + dinheiro(t.gastos), 'total')}
+        ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
+      </section>
+
+      <section class="cartao">
+        <h2>Para guardar na semana</h2>
+        ${linha('Combustível', dinheiro(t.combustivel))}
+        ${linha('Manutenção da moto', dinheiro(t.manutencao))}
+        ${linha('Custos fixos', dinheiro(t.fixos))}
+        ${linha('Guardar', dinheiro(t.combustivel + t.manutencao + t.fixos), 'total')}
+        <p class="suave" style="margin-top:8px">As despesas você já pagou no dia: por isso não entram aqui. O que sobra do lucro depois de separar este valor é seu.</p>
+      </section>
+
       <section class="cartao indicadores">
-        <div><span>Faturamento</span><b>${dinheiro(t.faturamento)}</b></div>
-        <div><span>Gastos totais</span><b>${dinheiro(t.gastos)}</b></div>
-        <div><span>Lucro</span><b>${dinheiro(t.lucro)}</b></div>
-        <div><span>Guardar na semana</span><b>${dinheiro(t.guardar + t.combustivel)}</b></div>
-        <div><span>Vs. semana anterior</span><b>${textoVariacao}</b></div>
         <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
-        <div><span>Média por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
+        <div><span>Lucro médio por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
         <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
+        <div><span>Vs. semana anterior</span><b>${textoVariacao}</b></div>
       </section>
       ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}
       ${htmlMetaSemana(
