@@ -1,7 +1,7 @@
 // Testes do histórico semanal. Para rodar: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao, diasPorSemana, metaDaSemana, fixosDaSemana, fixoDoDia } from './semana.js';
+import { somarDias, inicioDaSemana, datasDaSemana, resumoDaSemana, variacao, diasPorSemana, metaDaSemana, fixosDaSemana, fixoDoDia, atrasoDosFixos } from './semana.js';
 
 // Cria um dia fechado de exemplo
 const dia = (data, lucro, gastos, plataformas = [{ nome: 'iFood', valor: 100, corridas: 4 }]) => ({
@@ -203,4 +203,21 @@ test('custo fixo do dia: semana normal é sempre o fixo por dia; folgar além do
   const seis = ['16', '17', '18', '19', '20', '21'].map((d) => fechado('2026-11-' + d, 9.08));
   assert.equal(fixoDoDia({ ...base, data: '2026-11-22', anteriores: seis }), 0);
   assert.equal(fixoDoDia({ fixoPorDia: 0, diasPorMes: 26, data: '2026-11-16' }), 0);
+});
+
+test('atraso dos fixos: o que não foi coberto na semana passada entra na semana nova', () => {
+  const base = { fixoPorDia: 9.08, diasPorMes: 26 };
+  const fechado = (data) => ({ data, calculados: { fixos: 9.08 } });
+  // semana de 16/11: 5 dias (seg a sex) descontaram 45,40 de 54,48. Sem domingo, ficou faltando 9,08
+  const passada = ['16', '17', '18', '19', '20'].map((d) => fechado('2026-11-' + d));
+  const atraso = atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: passada, primeiraData: '2026-11-16' });
+  assert.equal(atraso, 9.08);
+  // segunda 23/11: (54,48 + 9,08) ÷ 6 dias = 10,59
+  assert.equal(fixoDoDia({ ...base, data: '2026-11-23', atraso }), 10.59);
+  // semana passada completa: sem atraso
+  const cheia = [...passada, fechado('2026-11-21')];
+  assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: cheia, primeiraData: '2026-11-16' }), 0);
+  // semanas antes do primeiro dia do app não geram atraso
+  assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: [], primeiraData: '2026-11-23' }), 0);
+  assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: [], primeiraData: null }), 0);
 });

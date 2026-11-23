@@ -1,7 +1,7 @@
 // Aba Hoje. Abrir o dia (data + odômetro), lançar despesas e fechar o dia com o resultado.
 // Também serve para editar um dia já fechado (o Histórico reabre o dia e manda para cá).
 import { buscarDiaAberto, criarDia, atualizarDia, excluirDia, fecharDia, diasFechadosNaData, diasFechadosNoPeriodo, ultimosDias, primeiroDia } from '../services/dias.js';
-import { fixoDoDia, inicioDaSemana, somarDias } from './semana.js';
+import { fixoDoDia, atrasoDosFixos, inicioDaSemana, somarDias } from './semana.js';
 import { carregarConfig } from '../services/dados.js';
 import { mesEstaFechado, listarMeses } from '../services/meses.js';
 import { calcularDia, parametrosDoDia, lerHoras } from './calculos.js';
@@ -393,9 +393,11 @@ export async function telaHoje(raiz, usuario) {
     if (!(emEdicao() && dia.snapshot)) {
       try {
         const inicio = inicioDaSemana(data);
-        const daSemana = await diasFechadosNoPeriodo(usuario.uid, inicio, somarDias(inicio, 6));
-        const anteriores = daSemana.filter((d) => d.data < data && d.id !== dia.id);
-        parametros = { ...parametros, fixoPorDia: fixoDoDia({ data, fixoPorDia: parametros.fixoPorDia, diasPorMes: config.diasPorMes, anteriores }) };
+        const lidos = await diasFechadosNoPeriodo(usuario.uid, somarDias(inicio, -28), somarDias(inicio, 6));
+        const base = { fixoPorDia: parametros.fixoPorDia, diasPorMes: config.diasPorMes };
+        const atraso = atrasoDosFixos({ ...base, inicioDaSemanaNova: inicio, anteriores: lidos.filter((d) => d.data < inicio), primeiraData: primeiro ? primeiro.data : null });
+        const anteriores = lidos.filter((d) => d.data >= inicio && d.data < data && d.id !== dia.id);
+        parametros = { ...parametros, fixoPorDia: fixoDoDia({ ...base, data, anteriores, atraso }) };
       } catch (e) {
         // sem ler a semana (sem sinal): usa o custo fixo normal do dia
       }

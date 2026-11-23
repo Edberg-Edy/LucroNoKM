@@ -105,31 +105,56 @@ function restantesDaSemana({ dias, datas, hoje, hojeFechado, diasTrabalhados, pe
 // ainda deve de custo fixo (previsto − já descontado nos dias anteriores) se divide pelos dias de trabalho que restam.
 // Semana normal: sempre o fixo por dia (ex.: R$ 9,08). Folgou além do previsto: sobram menos dias e o valor sobe.
 //   anteriores = dias fechados da mesma semana com data antes deste dia
-export function fixoDoDia({ data, fixoPorDia, diasPorMes, anteriores = [] }) {
+//   atraso = custo fixo que ficou sem cobrir nas semanas anteriores (veja atrasoDosFixos): a conta do mês continua lá
+export function fixoDoDia({ data, fixoPorDia, diasPorMes, anteriores = [], atraso = 0 }) {
   if (!(fixoPorDia > 0) || !(diasPorMes > 0)) return fixoPorDia > 0 ? fixoPorDia : 0;
   const dias = diasPorSemana(diasPorMes);
   const indice = datasDaSemana(inicioDaSemana(data)).indexOf(data);
   const descontado = soma(anteriores, (d) => d.calculados.fixos || 0);
-  const falta = Math.max(0, fixoPorDia * dias - descontado);
+  const falta = Math.max(0, fixoPorDia * dias + atraso - descontado);
   const corridos = 7 - indice; // este dia e os que restam até domingo
   const restantes = Math.max(1, Math.min(corridos, dias - anteriores.length));
   return Math.round((falta / restantes) * 100) / 100;
 }
 
+// Quanto de custo fixo ficou sem cobrir nas últimas semanas (imprevisto, folga a mais, domingo sem trabalhar...).
+// Esse valor não some na virada da semana: entra no que a semana nova precisa cobrir.
+//   inicioDaSemanaNova = segunda-feira da semana que está sendo calculada
+//   anteriores = dias fechados dos últimos dias antes dessa segunda-feira
+//   primeiraData = data do primeiro dia já lançado (semanas antes do uso do app não geram atraso)
+// Olha as 4 últimas semanas: quem volta de uma pausa longa não leva a conta toda de uma vez.
+export function atrasoDosFixos({ inicioDaSemanaNova, anteriores, fixoPorDia, diasPorMes, primeiraData }) {
+  if (!(fixoPorDia > 0) || !(diasPorMes > 0) || !primeiraData) return 0;
+  const previsto = fixoPorDia * diasPorSemana(diasPorMes);
+  let atraso = 0;
+  for (let i = 4; i >= 1; i--) {
+    const inicio = somarDias(inicioDaSemanaNova, -7 * i);
+    const fim = somarDias(inicio, 6);
+    if (fim < primeiraData) continue; // semana antes de começar a usar o app
+    const descontado = soma(
+      anteriores.filter((d) => d.data >= inicio && d.data <= fim),
+      (d) => d.calculados.fixos || 0
+    );
+    atraso = Math.max(0, atraso + previsto - descontado);
+  }
+  return Math.round(atraso * 100) / 100;
+}
+
 // Custos fixos da semana: o mês cobra o valor inteiro mesmo que você trabalhe menos dias. Por isso o previsto é
 // (fixo por dia) × (dias de trabalho da semana), e o que os dias lançados já descontaram é comparado com ele.
 // Faltou descontar? Esse resto vai para os dias de trabalho que sobram na semana (o "guardar" sobe nesses dias).
-export function fixosDaSemana({ descontado, fixoPorDia, diasPorMes, datas, hoje, hojeFechado, diasTrabalhados = 0 }) {
+export function fixosDaSemana({ descontado, fixoPorDia, diasPorMes, datas, hoje, hojeFechado, diasTrabalhados = 0, atraso = 0 }) {
   if (!(fixoPorDia > 0) || !(diasPorMes > 0)) return null;
   const dias = diasPorSemana(diasPorMes);
   const semanaAtual = datas.includes(hoje);
   // semana passada sem nenhum dia lançado: não havia o que cobrar (ex.: antes de começar a usar o app)
-  const previsto = diasTrabalhados === 0 && !semanaAtual ? 0 : fixoPorDia * dias;
+  const previsto = diasTrabalhados === 0 && !semanaAtual ? 0 : fixoPorDia * dias + atraso;
   const falta = Math.max(0, previsto - descontado);
   const { diasRestantes } = restantesDaSemana({ dias, datas, hoje, hojeFechado, diasTrabalhados, pendente: falta > 0 });
   return {
     dias,
     previsto,
+    atraso: diasTrabalhados === 0 && !semanaAtual ? 0 : atraso,
     descontado,
     falta,
     semanaAtual,

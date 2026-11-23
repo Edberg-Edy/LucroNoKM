@@ -87,6 +87,7 @@ export function htmlGuardarSemana(t, f) {
       nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; ficaram faltando ${dinheiro(f.falta)}. O mês cobra o valor inteiro, mesmo com menos dias trabalhados.`;
     }
   }
+  if (f && f.atraso > 0.005) nota = `Inclui ${dinheiro(f.atraso)} de custos fixos que ficaram sem cobrir nas semanas anteriores: a conta do mês continua lá. ${nota}`;
   return `
       <section class="cartao">
         <h2>Para guardar na semana</h2>
