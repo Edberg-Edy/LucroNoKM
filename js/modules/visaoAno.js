@@ -80,7 +80,7 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
       ${linha('Lucro médio por mês', t.lucroMedioPorMes === null ? '—' : dinheiro(t.lucroMedioPorMes))}
       ${linha('Lucro médio por dia', t.lucroMedioPorDia === null ? '—' : dinheiro(t.lucroMedioPorDia))}
       ${linha('Melhor mês', destaque(resumo.melhorMes))}
-      ${t.mesesTrabalhados > 1 ? linha('Pior mês', destaque(resumo.piorMes)) : ''}
+      ${resumo.piorMes ? linha('Pior mês', destaque(resumo.piorMes)) : ''}
       ${
         t.diasTrabalhados > 0
           ? '<button type="button" class="botao secundario" data-acao="csvAno">Baixar planilha do ano (CSV)</button>'

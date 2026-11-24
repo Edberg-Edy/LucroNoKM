@@ -29,15 +29,15 @@ function montar({ abastecimentos, terminou = true, fixosCfg = [{ valorMensal: 11
   });
 }
 
-test('mês com abastecimentos mostra o gasto real, o consumo real e a sugestão para os Ajustes', () => {
+test('mês com abastecimentos mostra valor abastecido, litros, consumo médio e custo por km', () => {
   const html = montar({ abastecimentos: [ab('a', '2026-08-31', 1000, 10, 60), ab('b', '2026-09-02', 1130, 5.6, 33.6)] });
   assert.match(html, /Combustível/);
-  assert.match(html, /Você abasteceu/);
+  assert.match(html, /Valor abastecido/);
+  assert.match(html, /Consumo médio/);
+  assert.match(html, /Custo por km/);
   assert.match(html, /R\$\s33,60/);
-  assert.doesNotMatch(html, /Sobrou no combustível|Estimado pelos dias fechados/); // sem comparação confusa
-  assert.match(html, /reserva para imprevistos ou revisão/); // pagou 33,60 e o dia descontou 48,00
+  assert.doesNotMatch(html, /Sobrou no combustível|Estimado pelos dias fechados|reserva para imprevistos|Nos Ajustes o consumo/); // sem informações extras
   assert.match(html, /23,2 km\/l/);
-  assert.match(html, /Nos Ajustes o consumo é 25,0 km\/l e o seu consumo real está 7% abaixo/);
 });
 
 test('mês sem abastecimento explica onde registrar, sem quebrar', () => {
@@ -65,30 +65,29 @@ test('a tela continua montando sem os blocos novos (compatível com quem chama s
   assert.doesNotMatch(html, /Gasto nos abastecimentos/);
 });
 
-test('semana: mostra combustível usado, litros e custo por km, mesmo sem abastecimento lançado', () => {
+test('semana: mostra km, km por litro, litros e valor do combustível, mesmo sem abastecimento lançado', () => {
   const dias = [{ data: '2026-10-26', calculados: { km: 200, combustivel: 48 }, snapshot: { kmPorLitro: 25 } }];
   const html = htmlCombustivelSemana(combustivelDoPeriodo(dias, [], ['2026-10-26']));
-  assert.match(html, /Combustível usado \(estimado\)/);
-  assert.match(html, /R\$\s48,00/);
-  assert.match(html, /8 L/);
-  assert.match(html, /R\$\s0,240/);
-  assert.doesNotMatch(html, /Gasto nos abastecimentos/);
+  assert.match(html, /Km rodados<\/span><b>200/);
+  assert.match(html, /Km por litro<\/span><b>25,0 km\/l/);
+  assert.match(html, /Litros usados \(estimado\)<\/span><b>8 L/);
+  assert.match(html, /Valor do combustível \(estimado\)<\/span><b>R\$\s48,00/);
+  assert.doesNotMatch(html, /Combustível por km/);
 });
 
 test('semana: com abastecimento aparecem gasto, litros, preço médio e consumo medido', () => {
   const dias = [{ data: '2026-10-27', calculados: { km: 130, combustivel: 31.2 }, snapshot: { kmPorLitro: 25 } }];
   const lista = [ab('a', '2026-10-26', 1000, 10, 60), ab('b', '2026-10-27', 1130, 5.6, 33.6)];
   const html = htmlCombustivelSemana(combustivelDoPeriodo(dias, lista, ['2026-10-26', '2026-10-27']));
-  assert.match(html, /Gasto nos abastecimentos/);
-  assert.match(html, /R\$\s93,60/);
+  assert.match(html, /Valor do combustível<\/span><b>R\$\s93,60/);
   assert.match(html, /23,2 km\/l/);
 });
 
 test('mês com abastecimentos sem valor pago mostra o gasto estimado e o consumo aproximado', () => {
   const sem = (id, data, odometro, litros) => ({ id, data, odometro, litros, cheio: false });
   const html = montar({ abastecimentos: [sem('a', '2026-08-31', 1000, 3), sem('b', '2026-09-02', 1130, 5.6)] });
-  assert.match(html, /Você abasteceu \(litros × preço dos Ajustes\)/);
-  assert.match(html, /Consumo real \(aproximado\)/);
+  assert.match(html, /Valor abastecido \(litros × preço dos Ajustes\)/);
+  assert.match(html, /Consumo médio \(aproximado\)/);
   assert.match(html, /23,2 km\/l/);
   assert.doesNotMatch(html, /Preço médio do litro/);
 });
@@ -97,8 +96,7 @@ test('semana sem valor pago: consumo aproximado aparece no lugar do medido', () 
   const dias = [{ data: '2026-10-27', calculados: { km: 130, combustivel: 31.2 }, snapshot: { kmPorLitro: 25 } }];
   const lista = [{ id: 'a', data: '2026-10-26', odometro: 1000, litros: 3, cheio: false }, { id: 'b', data: '2026-10-27', odometro: 1130, litros: 5.6, cheio: false }];
   const html = htmlCombustivelSemana(combustivelDoPeriodo(dias, lista, ['2026-10-26', '2026-10-27'], 6));
-  assert.match(html, /Gasto nos abastecimentos \(estimado\)/);
-  assert.match(html, /Consumo aproximado/);
+  assert.match(html, /Valor do combustível \(litros × preço dos Ajustes\)/);
   assert.match(html, /23,2 km\/l/);
 });
 
