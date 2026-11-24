@@ -85,7 +85,7 @@ export function htmlResultado(dia) {
       ${linha('Menos os gastos', '− ' + dinheiro(c.gastos))}
       ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
       ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(totalGuardar), 'total')}
-      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto, ${dinheiro(c.fixos)} para os custos fixos (DAS, internet etc.) e ${dinheiro(c.despesas)} para repor as despesas que saíram do dinheiro da moto. Só o que sobra é seu para gastar.${prejuizo}</p>
+      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto, ${dinheiro(c.fixos)} para os custos fixos e ${dinheiro(c.despesas)} para repor as despesas.${prejuizo}</p>
     </section>
     </div>
     </div>`;

@@ -77,7 +77,7 @@ export function htmlGuardarSemana(t, f) {
   const fixos = f ? f.previsto : t.fixos;
   const total = t.combustivel + t.manutencao + t.despesas + fixos;
   const pl = (n) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
-  let nota = 'As despesas entram porque saíram do dinheiro da moto e precisam ser repostas. O que sobra do lucro depois de separar este valor é seu.';
+  let nota = '';
   if (f && f.falta > 0.005) {
     if (f.semanaAtual && f.extraPorDia !== null) {
       nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; faltam ${dinheiro(f.falta)}. Restam ${pl(f.diasRestantes)} de trabalho até domingo: o custo fixo de cada um sobe para ${dinheiro(f.extraPorDia)}. Folgou além do previsto? O valor por dia sobe sozinho.`;
@@ -96,7 +96,7 @@ export function htmlGuardarSemana(t, f) {
         ${linha('Despesas', dinheiro(t.despesas))}
         ${linha(f ? `Custos fixos (${pl(f.dias)} de trabalho)` : 'Custos fixos', dinheiro(fixos))}
         ${linha('Guardar na semana', dinheiro(total), 'total')}
-        <p class="suave" style="margin-top:8px">${nota}</p>
+        ${nota ? `<p class="suave" style="margin-top:8px">${nota}</p>` : ''}
       </section>`;
 }
 
@@ -240,7 +240,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(t.guardar + t.combustivel + t.despesas), 'total')}
       ${
         temDias
-          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel + t.despesas)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto, ${dinheiro(t.fixos)} para os custos fixos (DAS, internet etc.) e ${dinheiro(t.despesas)} para repor as despesas. Só o que sobra é seu para gastar.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
+          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel + t.despesas)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto, ${dinheiro(t.fixos)} para os custos fixos e ${dinheiro(t.despesas)} para repor as despesas.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
           : ''
       }
     </section>
