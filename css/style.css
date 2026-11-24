@@ -820,3 +820,9 @@ a {
 .item-dia.confirmando .detalhe { grid-row: 2; }
 .mini { margin: 0 0 4px; font-size: 14px; }
 .nav-semana button { white-space: nowrap; }
+
+/* Etapa 43: confirmação de excluir cabe no cartão; combustível do mês em grade */
+.item-dia .acoes .x.cfm { width: auto; padding: 0 12px; }
+.indicadores.sem-caixa { background: none; border: 0; padding: 0; margin: 0 0 8px; box-shadow: none; }
+.indicadores b.mais { color: var(--vermelho); }
+.indicadores b.menos { color: var(--verde); }

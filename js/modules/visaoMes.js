@@ -139,32 +139,32 @@ function htmlCombustivel(c) {
   let dica = '';
   if (c.desvio !== null && Math.abs(c.desvio) >= 0.05) {
     const pontos = Math.round(Math.abs(c.desvio) * 100);
-    dica =
-      `O consumo ${c.desvioDeEstimativa ? 'aproximado' : 'medido'} está ${pontos}% ${c.desvio < 0 ? 'abaixo' : 'acima'} do km/l dos Ajustes (${kmL(c.kmPorLitroAjuste)}). ` +
-      'Em Ajustes, o botão do consumo medido corrige o km/l para os dias novos. ';
+    dica = `Seu consumo ${c.desvioDeEstimativa ? 'aproximado' : 'medido'} está ${pontos}% ${c.desvio < 0 ? 'abaixo' : 'acima'} do km/l dos Ajustes (${kmL(c.kmPorLitroAjuste)} km/l). Em Ajustes, você pode corrigir o km/l para os dias novos.`;
   }
 
   const aviso = c.alerta
     ? `<p class="aviso-topo">O último trecho rendeu ${kmL(c.alerta.ultimo)} km/l, ${Math.round(c.alerta.queda * 100)}% abaixo da média anterior (${kmL(c.alerta.media)}). Vale conferir pneus (calibragem), corrente, filtro de ar e vela.</p>`
     : '';
+  const consumo =
+    c.kmPorLitro !== null
+      ? ['Consumo medido', kmL(c.kmPorLitro) + ' km/l']
+      : ['Consumo aproximado', c.aproximado ? kmL(c.aproximado.kmPorLitro) + ' km/l' : '—'];
   return `
     <section class="cartao">
-      <h2>Combustível</h2>
+      <h2>Combustível do mês</h2>
       ${aviso}
-      ${linha('Gasto nos abastecimentos' + (c.valorEstimado ? ' (litros × preço dos Ajustes)' : ''), dinheiro(c.valor), 'total')}
-      ${linha('Estimado pelos dias fechados', dinheiro(c.estimado))}
-      ${linha(mais ? 'Gastou a mais que o estimado' : 'Gastou a menos que o estimado', dinheiro(Math.abs(c.diferenca)))}
-      ${linha('Litros abastecidos', litrosBR(c.litros) + ' L')}
-      ${
-        c.kmPorLitro !== null
-          ? linha('Consumo medido (tanque a tanque)', kmL(c.kmPorLitro) + ' km/l')
-          : linha('Consumo aproximado (estimativa)', c.aproximado ? kmL(c.aproximado.kmPorLitro) + ' km/l' : '—')
-      }
-      ${linha('Custo real por km', c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm))}
-      ${dica ? `<p class="suave">${dica.trim()}</p>` : ''}
+      <div class="indicadores sem-caixa">
+        <div><span>Gasto nos abastecimentos${c.valorEstimado ? ' (estimado)' : ''}</span><b>${dinheiro(c.valor)}</b></div>
+        <div><span>Litros abastecidos</span><b>${litrosBR(c.litros)} L</b></div>
+        <div><span>Estimado pelos dias fechados</span><b>${dinheiro(c.estimado)}</b></div>
+        <div><span>${mais ? 'Gastou a mais' : 'Gastou a menos'}</span><b class="${mais ? 'mais' : 'menos'}">${dinheiro(Math.abs(c.diferenca))}</b></div>
+        <div><span>${consumo[0]}</span><b>${consumo[1]}</b></div>
+        <div><span>Custo real por km</span><b>${c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm)}</b></div>
+      </div>
+      ${dica ? `<p class="suave">${dica}</p>` : ''}
       <details class="como">
         <summary>Como é calculado?</summary>
-        <p class="suave">O gasto soma o que foi abastecido no mês: o abastecimento dos últimos dias pode ser para os primeiros dias do mês seguinte. O consumo medido só aparece com dois abastecimentos em que você marcou "Completei o tanque". O aproximado usa todos os abastecimentos (km rodados ÷ litros) e fica mais certo a cada mês.</p>
+        <p class="suave">"Gasto nos abastecimentos" soma o que foi abastecido no mês (o abastecimento dos últimos dias pode ser para o mês seguinte). "Estimado" é o combustível calculado em cada dia fechado. O consumo medido só aparece com dois abastecimentos em que você marcou "Completei o tanque"; o aproximado usa todos (km rodados ÷ litros) e fica mais certo a cada mês.</p>
       </details>
     </section>`;
 }

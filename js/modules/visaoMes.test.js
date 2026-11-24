@@ -36,9 +36,9 @@ test('mês com abastecimentos mostra o gasto real contra o estimado e o consumo 
   assert.match(html, /R\$\s33,60/);
   assert.match(html, /Estimado pelos dias fechados/);
   assert.match(html, /R\$\s48,00/); // 2 dias × R$ 24,00
-  assert.match(html, /Gastou a menos que o estimado/); // pagou 33,60 contra 48,00 estimados
+  assert.match(html, /Gastou a menos/); // pagou 33,60 contra 48,00 estimados
   assert.match(html, /23,2 km\/l/);
-  assert.match(html, /7% abaixo do km\/l dos Ajustes \(25,0\)/);
+  assert.match(html, /7% abaixo do km\/l dos Ajustes \(25,0 km\/l\)/);
 });
 
 test('mês sem abastecimento explica onde registrar, sem quebrar', () => {
@@ -88,8 +88,8 @@ test('semana: com abastecimento aparecem gasto, litros, preço médio e consumo 
 test('mês com abastecimentos sem valor pago mostra o gasto estimado e o consumo aproximado', () => {
   const sem = (id, data, odometro, litros) => ({ id, data, odometro, litros, cheio: false });
   const html = montar({ abastecimentos: [sem('a', '2026-08-31', 1000, 3), sem('b', '2026-09-02', 1130, 5.6)] });
-  assert.match(html, /Gasto nos abastecimentos \(litros × preço dos Ajustes\)/);
-  assert.match(html, /Consumo aproximado \(estimativa\)/);
+  assert.match(html, /Gasto nos abastecimentos \(estimado\)/);
+  assert.match(html, /Consumo aproximado/);
   assert.match(html, /23,2 km\/l/);
   assert.doesNotMatch(html, /Preço médio do litro/);
 });

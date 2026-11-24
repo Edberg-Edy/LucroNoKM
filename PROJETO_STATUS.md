@@ -46,6 +46,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 40 | Atraso do custo fixo passa só da semana anterior e nunca cria dívida falsa (dias de trabalho sem lançar × fixo por dia) | ✅ v0.40 |
 | 41 | Frase do "Guardar" mais curta (sem exemplos e sem repetição) | ✅ v0.41 |
 | 42 | Ajustes de tela: textos menores na semana, sem "(rateio)", lucro por km/corrida na semana, ano com gastos detalhados, mês a mês e melhor/pior dia sem estourar, excluir alinhado | ✅ v0.42 |
+| 43 | Card de combustível do mês em grade (mais intuitivo) e botão Excluir? dentro do cartão | ✅ v0.43 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |
@@ -54,7 +55,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 22 | Cartão "Meta da semana" no histórico (meta diária × dias de trabalho tirados dos Ajustes, com % e ritmo) | ✅ v0.22 |
 | — | Logo ao lado do nome na barra superior (computador) e README reescrito | ✅ |
 
-Estado atual: **206 testes** passando (`npm test`) + 10 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v41`.
+Estado atual: **206 testes** passando (`npm test`) + 10 de navegador (`npm run e2e`) + regras do Firestore (`npm run regras`) + lint (`npm run lint`), service worker `lucronokm-v42`.
 
 ## Decisões recentes
 
