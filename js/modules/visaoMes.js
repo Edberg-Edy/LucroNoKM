@@ -78,16 +78,18 @@ export function htmlGuardarSemana(t, f) {
   const total = t.combustivel + t.manutencao + t.despesas + fixos;
   const pl = (n) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
   let nota = '';
+  const doAtraso = f && f.atraso > 0.005 ? ` (inclui ${dinheiro(f.atraso)} da semana anterior)` : '';
   if (f && f.falta > 0.005) {
     if (f.semanaAtual && f.extraPorDia !== null) {
-      nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; faltam ${dinheiro(f.falta)}. Restam ${pl(f.diasRestantes)} de trabalho até domingo: o custo fixo de cada um sobe para ${dinheiro(f.extraPorDia)}. Folgou além do previsto? O valor por dia sobe sozinho.`;
+      nota = `Faltam ${dinheiro(f.falta)} de custos fixos${doAtraso}. Restam ${pl(f.diasRestantes)} de trabalho: ${dinheiro(f.extraPorDia)} por dia.`;
     } else if (f.semanaAtual) {
-      nota = `Faltam ${dinheiro(f.falta)} de custos fixos e não restam dias de trabalho nesta semana: separe do lucro que já tem.`;
+      nota = `Faltam ${dinheiro(f.falta)} de custos fixos${doAtraso} e não restam dias de trabalho nesta semana.`;
     } else {
-      nota = `Os dias lançados descontaram ${dinheiro(f.descontado)} dos custos fixos; ficaram faltando ${dinheiro(f.falta)}. O mês cobra o valor inteiro, mesmo com menos dias trabalhados.`;
+      nota = `Ficaram faltando ${dinheiro(f.falta)} de custos fixos nesta semana.`;
     }
+  } else if (doAtraso) {
+    nota = `Custos fixos${doAtraso}.`;
   }
-  if (f && f.atraso > 0.005) nota = `Inclui ${dinheiro(f.atraso)} de custos fixos que ficaram sem cobrir nas semanas anteriores: a conta do mês continua lá. ${nota}`;
   return `
       <section class="cartao">
         <h2>Para guardar na semana</h2>
@@ -230,7 +232,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
       ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
       ${linha('Despesas', '− ' + dinheiro(t.despesas))}
-      ${linha('Custos fixos (rateio)', '− ' + dinheiro(t.fixos))}
+      ${linha('Custos fixos', '− ' + dinheiro(t.fixos))}
       ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
     </section>
 
@@ -259,8 +261,8 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
       <div><span>Corridas</span><b>${t.corridas || '—'}</b></div>
       <div><span>Lucro por corrida</span><b>${t.lucroPorCorrida === null ? '—' : dinheiro(t.lucroPorCorrida)}</b></div>
       <div><span>Vs. mês anterior</span><b>${textoVariacao}</b></div>
-      <div><span>Melhor dia</span><b>${destaque(resumo.melhor)}</b></div>
-      ${t.diasTrabalhados > 1 ? `<div><span>Pior dia</span><b>${destaque(resumo.pior)}</b></div>` : ''}
+      <div class="larga"><span>Melhor dia</span><b>${destaque(resumo.melhor)}</b></div>
+      ${t.diasTrabalhados > 1 ? `<div class="larga"><span>Pior dia</span><b>${destaque(resumo.pior)}</b></div>` : ''}
     </section>
 
     ${combustivel ? htmlCombustivel(combustivel) : ''}

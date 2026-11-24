@@ -234,3 +234,11 @@ test('atraso dos fixos: não cria dívida falsa (custo fixo antigo menor ou já 
   // só a semana imediatamente anterior conta
   assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-30', anteriores: dias(5, 9.08) }), 54.48);
 });
+
+test('a semana mostra corridas, lucro por km e lucro por corrida', () => {
+  const r = resumoDaSemana([dia('2026-11-02', 60, 40), dia('2026-11-03', 60, 40)], datasDaSemana('2026-11-02'));
+  assert.equal(r.totais.corridas, 8);
+  assert.equal(r.totais.lucroPorKm, 120 / 200);
+  assert.equal(r.totais.lucroPorCorrida, 120 / 8);
+  assert.equal(resumoDaSemana([], datasDaSemana('2026-11-02')).totais.lucroPorKm, null);
+});

@@ -45,6 +45,10 @@ export function resumoDaSemana(dias, datas) {
   const diasTrabalhados = porDia.filter((d) => d.tem).length;
   const lucro = soma(porDia, (d) => d.lucro);
 
+  const plataformas = rankingPlataformas(daSemana);
+  const corridas = plataformas.reduce((total, p) => total + p.corridas, 0);
+  const km = soma(daSemana, (d) => d.calculados.km);
+
   const totais = {
     faturamento: soma(porDia, (d) => d.faturamento),
     gastos: soma(porDia, (d) => d.gastos),
@@ -54,12 +58,13 @@ export function resumoDaSemana(dias, datas) {
     manutencao: soma(daSemana, (d) => d.calculados.manutencao || 0),
     fixos: soma(daSemana, (d) => d.calculados.fixos || 0),
     guardar: soma(daSemana, (d) => d.calculados.guardar), // moto + custos fixos (o combustível entra por cima nas telas)
-    km: soma(daSemana, (d) => d.calculados.km),
+    km,
+    corridas,
     diasTrabalhados,
     mediaPorDia: diasTrabalhados > 0 ? lucro / diasTrabalhados : null,
+    lucroPorKm: km > 0 ? lucro / km : null,
+    lucroPorCorrida: corridas > 0 ? lucro / corridas : null,
   };
-
-  const plataformas = rankingPlataformas(daSemana);
 
   return { porDia, totais, plataformas };
 }

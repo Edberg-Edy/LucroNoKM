@@ -813,3 +813,10 @@ a {
 }
 
 .como summary { cursor: pointer; color: var(--destaque); font-weight: 600; padding: 8px 0; }
+
+/* Etapa 42: itens largos nos cartões de indicadores, confirmação de excluir sem estourar o cartão, linha pequena do mês a mês */
+.indicadores .larga { grid-column: 1 / -1; }
+.item-dia.confirmando .acoes { grid-column: 1 / -1; grid-row: 3; justify-content: flex-end; }
+.item-dia.confirmando .detalhe { grid-row: 2; }
+.mini { margin: 0 0 4px; font-size: 14px; }
+.nav-semana button { white-space: nowrap; }

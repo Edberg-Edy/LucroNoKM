@@ -74,7 +74,7 @@ export function htmlResultado(dia) {
       ${linha('Combustível (calculado)', '− ' + dinheiro(c.combustivel))}
       ${linha('Despesas', '− ' + dinheiro(c.despesas))}
       ${linha('Manutenção da moto', '− ' + dinheiro(c.manutencao))}
-      ${linha('Custos fixos (rateio)', '− ' + dinheiro(c.fixos))}
+      ${linha('Custos fixos', '− ' + dinheiro(c.fixos))}
       ${linha('Total gasto', '− ' + dinheiro(c.gastos), 'total')}
       ${linha('Lucro líquido', dinheiro(c.lucro), 'total')}
     </section>

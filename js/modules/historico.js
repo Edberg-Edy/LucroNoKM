@@ -266,7 +266,7 @@ export async function telaHistorico(caixa, usuario) {
         ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
         ${linha('Despesas', '− ' + dinheiro(t.despesas))}
         ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
-        ${linha('Custos fixos (rateio)', '− ' + dinheiro(t.fixos))}
+        ${linha('Custos fixos', '− ' + dinheiro(t.fixos))}
         ${linha('Total gasto', '− ' + dinheiro(t.gastos), 'total')}
         ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
       </section>
@@ -336,7 +336,7 @@ export async function telaHistorico(caixa, usuario) {
             ? lista
                 .map(
                   (d) => `
-          <div class="item-dia">
+          <div class="item-dia ${confirmarExcluir === d.id ? 'confirmando' : ''}">
             <button type="button" class="ver titulo" data-ver="${d.id}">
               <b>${nomeDoDia(d.data)} · ${dataBR(d.data).slice(0, 5)}</b> · Lucro <span class="nq">${dinheiro(d.calculados.lucro)}</span>
             </button>

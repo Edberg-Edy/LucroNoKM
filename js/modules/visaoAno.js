@@ -18,12 +18,10 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
   const meses = resumo.meses
     .map((m) => {
       const largura = maior > 0 ? (m.faturamento / maior) * 100 : 0;
-      const detalhe =
-        m.diasTrabalhados > 0
-          ? `${dinheiro(m.faturamento)} · lucro ${dinheiro(m.lucro)} · ${m.diasTrabalhados} ${m.diasTrabalhados === 1 ? 'dia' : 'dias'}`
-          : '—';
+      const trabalhou = m.diasTrabalhados > 0;
       return `
-        <div class="resumo"><span>${maiuscula(soMes(m.ym))}</span><b>${detalhe}</b></div>
+        <div class="resumo"><span>${maiuscula(soMes(m.ym))}</span><b>${trabalhou ? 'Lucro ' + dinheiro(m.lucro) : '—'}</b></div>
+        ${trabalhou ? `<p class="suave mini">Faturou ${dinheiro(m.faturamento)} · ${m.diasTrabalhados} ${m.diasTrabalhados === 1 ? 'dia' : 'dias'}</p>` : ''}
         <div class="medidor" role="img" aria-label="${maiuscula(soMes(m.ym))}: faturamento de ${dinheiro(m.faturamento)}"><i style="width:${largura}%"></i></div>`;
     })
     .join('');
@@ -45,7 +43,10 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
       <h2>Resumo do ano</h2>
       ${linha('Faturamento', dinheiro(t.faturamento), 'total')}
       ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
-      ${linha('Gastos (combustível, manutenção, despesas e fixos)', '− ' + dinheiro(t.gastos))}
+      ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
+      ${linha('Despesas', '− ' + dinheiro(t.despesas))}
+      ${linha('Custos fixos', '− ' + dinheiro(t.fixos))}
+      ${linha('Total gasto', '− ' + dinheiro(t.gastos), 'total')}
       ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
     </section>
 
