@@ -393,7 +393,7 @@ export async function telaHoje(raiz, usuario) {
     if (!(emEdicao() && dia.snapshot)) {
       try {
         const inicio = inicioDaSemana(data);
-        const lidos = await diasFechadosNoPeriodo(usuario.uid, somarDias(inicio, -28), somarDias(inicio, 6));
+        const lidos = await diasFechadosNoPeriodo(usuario.uid, somarDias(inicio, -7), somarDias(inicio, 6));
         const base = { fixoPorDia: parametros.fixoPorDia, diasPorMes: config.diasPorMes };
         const atraso = atrasoDosFixos({ ...base, inicioDaSemanaNova: inicio, anteriores: lidos.filter((d) => d.data < inicio), primeiraData: primeiro ? primeiro.data : null });
         const anteriores = lidos.filter((d) => d.data >= inicio && d.data < data && d.id !== dia.id);

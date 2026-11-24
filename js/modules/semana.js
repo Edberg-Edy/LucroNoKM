@@ -117,27 +117,27 @@ export function fixoDoDia({ data, fixoPorDia, diasPorMes, anteriores = [], atras
   return Math.round((falta / restantes) * 100) / 100;
 }
 
-// Quanto de custo fixo ficou sem cobrir nas últimas semanas (imprevisto, folga a mais, domingo sem trabalhar...).
-// Esse valor não some na virada da semana: entra no que a semana nova precisa cobrir.
-//   inicioDaSemanaNova = segunda-feira da semana que está sendo calculada
-//   anteriores = dias fechados dos últimos dias antes dessa segunda-feira
-//   primeiraData = data do primeiro dia já lançado (semanas antes do uso do app não geram atraso)
-// Olha as 4 últimas semanas: quem volta de uma pausa longa não leva a conta toda de uma vez.
+// Custo fixo que a SEMANA ANTERIOR deixou sem cobrir (imprevisto, folga a mais, domingo sem trabalhar...).
+// Esse valor não some na virada: entra no que a semana nova precisa cobrir. Só passa uma semana para a outra,
+// para a conta ficar fácil de acompanhar (o fechamento do mês mostra o total devido e o descontado).
+// Para não criar dívida falsa, o que faltou é o MENOR entre:
+//   - o que falta para chegar no previsto (fixo por dia × dias de trabalho da semana), e
+//   - os dias de trabalho que ficaram sem lançar × fixo por dia.
+// Assim, dias fechados quando o custo fixo era menor (ou já repostos por outros dias) não viram atraso.
+//   anteriores = dias fechados (a função só olha a semana imediatamente anterior)
+//   primeiraData = data do primeiro dia já lançado (semana toda antes do uso do app não gera atraso)
 export function atrasoDosFixos({ inicioDaSemanaNova, anteriores, fixoPorDia, diasPorMes, primeiraData }) {
   if (!(fixoPorDia > 0) || !(diasPorMes > 0) || !primeiraData) return 0;
-  const previsto = fixoPorDia * diasPorSemana(diasPorMes);
-  let atraso = 0;
-  for (let i = 4; i >= 1; i--) {
-    const inicio = somarDias(inicioDaSemanaNova, -7 * i);
-    const fim = somarDias(inicio, 6);
-    if (fim < primeiraData) continue; // semana antes de começar a usar o app
-    const descontado = soma(
-      anteriores.filter((d) => d.data >= inicio && d.data <= fim),
-      (d) => d.calculados.fixos || 0
-    );
-    atraso = Math.max(0, atraso + previsto - descontado);
-  }
-  return Math.round(atraso * 100) / 100;
+  const inicio = somarDias(inicioDaSemanaNova, -7);
+  const fim = somarDias(inicio, 6);
+  if (fim < primeiraData) return 0;
+  const dias = diasPorSemana(diasPorMes);
+  const daSemana = anteriores.filter((d) => d.data >= inicio && d.data <= fim);
+  const descontado = soma(daSemana, (d) => d.calculados.fixos || 0);
+  const trabalhados = new Set(daSemana.map((d) => d.data)).size;
+  const porValor = Math.max(0, fixoPorDia * dias - descontado);
+  const porDias = Math.max(0, dias - trabalhados) * fixoPorDia;
+  return Math.round(Math.min(porValor, porDias) * 100) / 100;
 }
 
 // Custos fixos da semana: o mês cobra o valor inteiro mesmo que você trabalhe menos dias. Por isso o previsto é

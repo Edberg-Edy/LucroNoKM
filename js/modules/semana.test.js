@@ -221,3 +221,16 @@ test('atraso dos fixos: o que não foi coberto na semana passada entra na semana
   assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: [], primeiraData: '2026-11-23' }), 0);
   assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-23', anteriores: [], primeiraData: null }), 0);
 });
+
+test('atraso dos fixos: não cria dívida falsa (custo fixo antigo menor ou já reposto por outros dias)', () => {
+  const base = { fixoPorDia: 9.08, diasPorMes: 26, inicioDaSemanaNova: '2026-11-23', primeiraData: '2026-10-01' };
+  const dias = (qtd, fixos) => ['16', '17', '18', '19', '20', '21'].slice(0, qtd).map((d) => ({ data: '2026-11-' + d, calculados: { fixos } }));
+  // 6 dias trabalhados, mas quando o custo fixo era só R$ 3,31 por dia: não faltou dia nenhum, então não há atraso
+  assert.equal(atrasoDosFixos({ ...base, anteriores: dias(6, 3.31) }), 0);
+  // 4 dias trabalhados que já repuseram tudo (4 × 13,62 = 54,48): nada a repor
+  assert.equal(atrasoDosFixos({ ...base, anteriores: dias(4, 13.62) }), 0);
+  // semana inteira sem lançar (depois de já usar o app): falta a semana toda
+  assert.equal(atrasoDosFixos({ ...base, anteriores: [] }), 54.48);
+  // só a semana imediatamente anterior conta
+  assert.equal(atrasoDosFixos({ ...base, inicioDaSemanaNova: '2026-11-30', anteriores: dias(5, 9.08) }), 54.48);
+});
