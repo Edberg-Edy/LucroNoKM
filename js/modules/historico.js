@@ -295,6 +295,9 @@ export async function telaHistorico(caixa, usuario) {
         <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
         <div><span>Lucro médio por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
         <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
+        <div><span>Lucro por km</span><b>${t.lucroPorKm === null ? '—' : dinheiro(t.lucroPorKm)}</b></div>
+        <div><span>Corridas</span><b>${t.corridas || '—'}</b></div>
+        <div><span>Lucro por corrida</span><b>${t.lucroPorCorrida === null ? '—' : dinheiro(t.lucroPorCorrida)}</b></div>
         <div><span>Vs. semana anterior</span><b>${textoVariacao}</b></div>
       </section>
       ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}

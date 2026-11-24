@@ -75,6 +75,7 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
       <h2>Destaques</h2>
       ${linha('Dias trabalhados', String(t.diasTrabalhados))}
       ${linha('Km rodados', Math.round(t.km).toLocaleString('pt-BR') + ' km')}
+      ${linha('Lucro por km', t.km > 0 ? dinheiro(t.lucro / t.km) : '—')}
       ${linha('Lucro médio por mês', t.lucroMedioPorMes === null ? '—' : dinheiro(t.lucroMedioPorMes))}
       ${linha('Lucro médio por dia', t.lucroMedioPorDia === null ? '—' : dinheiro(t.lucroMedioPorDia))}
       ${linha('Melhor mês', destaque(resumo.melhorMes))}

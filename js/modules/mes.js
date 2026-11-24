@@ -71,6 +71,8 @@ export function resumoDoMes(dias, ym) {
       corridas,
       diasTrabalhados,
       mediaPorDia: diasTrabalhados > 0 ? lucro / diasTrabalhados : null,
+      lucroPorKm: km > 0 ? lucro / km : null,
+      lucroPorCorrida: corridas > 0 ? lucro / corridas : null,
       ganhoPorKm: km > 0 ? faturamento / km : null,
       ganhoPorCorrida: corridas > 0 ? valorComCorridas / corridas : null,
     },

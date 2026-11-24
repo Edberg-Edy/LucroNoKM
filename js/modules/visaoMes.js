@@ -253,11 +253,11 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
     <div class="col b">
     <section class="cartao indicadores">
       <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
-      <div><span>Média por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
+      <div><span>Lucro médio por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
       <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
-      <div><span>Ganho por km</span><b>${t.ganhoPorKm === null ? '—' : dinheiro(t.ganhoPorKm)}</b></div>
+      <div><span>Lucro por km</span><b>${t.lucroPorKm === null ? '—' : dinheiro(t.lucroPorKm)}</b></div>
       <div><span>Corridas</span><b>${t.corridas || '—'}</b></div>
-      <div><span>Ganho por corrida</span><b>${t.ganhoPorCorrida === null ? '—' : dinheiro(t.ganhoPorCorrida)}</b></div>
+      <div><span>Lucro por corrida</span><b>${t.lucroPorCorrida === null ? '—' : dinheiro(t.lucroPorCorrida)}</b></div>
       <div><span>Vs. mês anterior</span><b>${textoVariacao}</b></div>
       <div><span>Melhor dia</span><b>${destaque(resumo.melhor)}</b></div>
       ${t.diasTrabalhados > 1 ? `<div><span>Pior dia</span><b>${destaque(resumo.pior)}</b></div>` : ''}

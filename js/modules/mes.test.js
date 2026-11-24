@@ -117,3 +117,11 @@ test('mês que já passou não estima dias restantes', () => {
 test('lucro negativo não gera percentual negativo', () => {
   assert.equal(progressoDoMes({ ...base, lucro: -100 }).percentual, 0);
 });
+
+test('o mês mostra lucro por km e lucro por corrida (não o faturamento)', () => {
+  const r = resumoDoMes([dia('2026-11-02', 150), dia('2026-11-03', 150)], '2026-11');
+  assert.equal(r.totais.lucroPorKm, 300 / 200);
+  assert.equal(r.totais.lucroPorCorrida, 300 / 8);
+  assert.equal(resumoDoMes([], '2026-11').totais.lucroPorKm, null);
+  assert.equal(resumoDoMes([], '2026-11').totais.lucroPorCorrida, null);
+});
