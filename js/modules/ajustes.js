@@ -13,6 +13,7 @@ import { trechos, consumoMedio, consumoAproximado, kmL } from './combustivel.js'
 import { validarCampoAjuste } from './validacao.js';
 import { padroes } from '../config/padroes.js';
 import { dinheiro, esc } from './formatos.js';
+import { TIPOS_EMPRESA } from './mei.js';
 
 const dinheiro3 = (n) =>
   'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
@@ -24,7 +25,6 @@ const campos = [
   ['kmPorLitro', 'Km por litro da moto'],
   ['precoLitro', 'Preço do litro (R$)'],
   ['diasPorMes', 'Dias trabalhados por mês'],
-  ['limiteMei', 'Limite anual de faturamento do MEI (R$)'],
 ];
 
 // "caixa" é o espaço da tela onde os Ajustes aparecem; "usuario" é quem está logado.
@@ -160,6 +160,13 @@ export async function telaAjustes(caixa, usuario) {
               `<label>${rotulo}<input type="text" inputmode="decimal" data-num data-k="${chave}" value="${config[chave]}"></label>`
           )
           .join('')}
+        <label>Tipo de empresa
+          <select data-k="tipoEmpresa">${Object.entries(TIPOS_EMPRESA)
+            .map(([k, t]) => `<option value="${k}" ${(config.tipoEmpresa || 'MEI') === k ? 'selected' : ''}>${t.nome}</option>`)
+            .join('')}</select>
+        </label>
+        <label>Limite anual de faturamento (R$)<input type="text" inputmode="decimal" data-num data-k="limiteMei" value="${config.limiteMei}"></label>
+        <p class="suave">Ao trocar o tipo, o limite sugerido entra sozinho. Você pode digitar outro valor.</p>
       </section>
 
       <section class="cartao">
@@ -510,6 +517,11 @@ export async function telaAjustes(caixa, usuario) {
     let alvo = config;
     for (let i = 0; i < caminho.length - 1; i++) alvo = alvo[caminho[i]];
     alvo[caminho[caminho.length - 1]] = valor;
+
+    if (campo.dataset.k === 'tipoEmpresa' && TIPOS_EMPRESA[valor] && TIPOS_EMPRESA[valor].limite > 0) {
+      config.limiteMei = TIPOS_EMPRESA[valor].limite; // sugere o limite do tipo escolhido
+      desenhar();
+    }
 
     if (campo.hasAttribute('data-num')) campo.value = valor; // mostra o valor já corrigido
     atualizarResumos();

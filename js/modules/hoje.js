@@ -53,6 +53,7 @@ export async function telaHoje(raiz, usuario) {
   raiz.querySelector('#hojeAvisos').innerHTML = lembretes.map((t) => `<p class="aviso-topo" role="status">${esc(t)}</p>`).join('');
 
   let categoria = categorias[0]; // categoria de despesa selecionada
+  let editandoDespesa = null; // posição da despesa que está sendo editada (null = lançando uma nova)
   let confirmarDescarte = false; // true depois do primeiro toque em "Descartar este dia"
   let confirmarDataRepetida = null; // data que o usuário já confirmou manter, mesmo com outro dia nela
   let confirmarKm = null; // odômetro final que o usuário já confirmou, mesmo com km muito alto
@@ -146,6 +147,8 @@ export async function telaHoje(raiz, usuario) {
     const boasVindas = mostrarBoasVindas({ temDias: primeiro !== null, diaAberto: false, dispensado: boasVindasDispensado() });
     caixa.innerHTML = `
       ${boasVindas ? htmlBoasVindas() : ''}
+      <div class="painel dia-aberto">
+      <div class="col a">
       <section class="cartao estreito">
         <h1>Abrir o dia</h1>
         <label>Data do dia
@@ -159,7 +162,11 @@ export async function telaHoje(raiz, usuario) {
         <button type="button" class="botao" data-acao="abrir">Abrir o dia</button>
         <p class="suave" style="margin-top:12px">Esqueceu de lançar um dia? Troque a data acima.</p>
       </section>
-      <div id="lugarAbastecer"></div>`;
+      </div>
+      <div class="col b">
+      <div id="lugarAbastecer"></div>
+      </div>
+      </div>`;
   }
 
   function desenharResultado() {
@@ -195,8 +202,11 @@ export async function telaHoje(raiz, usuario) {
             .join('')}
         </div>
         <div class="linha-acao">
-          <input type="text" inputmode="decimal" id="valor" placeholder="Valor R$" aria-label="Valor da despesa">
-          <button type="button" data-acao="lancar">Lançar</button>
+          <input type="text" inputmode="decimal" id="valor" placeholder="Valor R$" aria-label="Valor da despesa" value="${
+            editandoDespesa !== null && dia.despesas[editandoDespesa] ? String(dia.despesas[editandoDespesa].valor).replace('.', ',') : ''
+          }">
+          <button type="button" data-acao="lancar">${editandoDespesa !== null ? 'Salvar' : 'Lançar'}</button>
+          ${editandoDespesa !== null ? '<button type="button" class="ghost" data-acao="cancelarDespesa">Cancelar</button>' : ''}
         </div>
         <p class="erro" id="erro" role="alert"></p>
         ${dia.despesas
@@ -205,6 +215,7 @@ export async function telaHoje(raiz, usuario) {
           <div class="item">
             <span>${esc(d.categoria)}</span>
             <b>${dinheiro(d.valor)}</b>
+            <button type="button" class="x ed" data-editar-despesa="${i}" aria-label="Editar despesa">✎</button>
             <button type="button" class="x" data-remover="${i}" aria-label="Excluir despesa">✕</button>
           </div>`
           )
@@ -337,6 +348,12 @@ export async function telaHoje(raiz, usuario) {
   function lancar() {
     const valor = lerNumero(caixa.querySelector('#valor').value);
     if (!valor) return mostrarErro('Digite um valor maior que zero.');
+    if (editandoDespesa !== null) {
+      const posicao = editandoDespesa;
+      editandoDespesa = null;
+      gravarDespesas((lista) => lista.map((d, i) => (i === posicao ? { categoria, valor } : d)));
+      return;
+    }
     gravarDespesas((lista) => [...lista, { categoria, valor }]);
   }
 
@@ -487,8 +504,19 @@ export async function telaHoje(raiz, usuario) {
       caixa.querySelectorAll('[data-categoria]').forEach((b) => {
         b.setAttribute('aria-pressed', String(b.dataset.categoria === categoria));
       });
+    } else if (botao.dataset.editarDespesa !== undefined) {
+      const item = dia.despesas[Number(botao.dataset.editarDespesa)];
+      if (!item) return;
+      editandoDespesa = Number(botao.dataset.editarDespesa);
+      if (categorias.includes(item.categoria)) categoria = item.categoria;
+      desenhar();
+    } else if (botao.dataset.acao === 'cancelarDespesa') {
+      editandoDespesa = null;
+      desenhar();
     } else if (botao.dataset.remover !== undefined) {
-      gravarDespesas((lista) => lista.filter((_, i) => i !== Number(botao.dataset.remover)));
+      const posicao = Number(botao.dataset.remover);
+      if (editandoDespesa !== null) editandoDespesa = null; // as posições mudam: sai do modo de edição
+      gravarDespesas((lista) => lista.filter((_, i) => i !== posicao));
     } else if (botao.dataset.acao === 'irAjustes') {
       dispensarBoasVindas();
       location.hash = 'ajustes';

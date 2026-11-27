@@ -50,3 +50,13 @@ test('alerta do MEI: passou do limite; janeiro e sem faturamento não projetam',
   assert.equal(alertaMei({ faturado: 0, limite: 81000, hoje: '2026-05-15' }).projecao, null);
   assert.equal(alertaMei({ faturado: 10, limite: 0, hoje: '2026-05-15' }).nivel, 'ok');
 });
+
+import { nomeDoLimite, TIPOS_EMPRESA } from './mei.js';
+import test2 from 'node:test';
+import assert2 from 'node:assert/strict';
+test2('nomeDoLimite: nome pelo tipo de empresa', () => {
+  assert2.equal(nomeDoLimite('ME'), 'ME');
+  assert2.equal(nomeDoLimite('OUTRO'), 'limite');
+  assert2.equal(nomeDoLimite(undefined), 'MEI');
+  assert2.equal(TIPOS_EMPRESA.MEI.limite, 81000);
+});

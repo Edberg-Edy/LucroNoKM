@@ -3,7 +3,7 @@ import { listarDiasFechadosDoAno, buscarDiaAberto, reabrirDia, excluirDia } from
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
-import { faturadoNoAno, alertaMei } from './mei.js';
+import { faturadoNoAno, alertaMei, nomeDoLimite } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
 import { resumoDoAno } from './ano.js';
 import { htmlAno } from './visaoAno.js';
@@ -152,8 +152,8 @@ export async function telaHistorico(caixa, usuario) {
         ? ''
         : `<p class="aviso-topo" role="status">${
             m.nivel === 'estourou'
-              ? `Atenção: você já faturou ${dinheiro(faturadoNoAno(dias, anoAtual))} em ${anoAtual}, acima do limite do MEI (${dinheiro(config.limiteMei)}). Procure um contador.`
-              : `Atenção: você já usou ${Math.round(m.percentual)}% do limite do MEI em ${anoAtual}. Restam ${dinheiro(m.restante)}.` +
+              ? `Atenção: você já faturou ${dinheiro(faturadoNoAno(dias, anoAtual))} em ${anoAtual}, acima do limite${nomeDoLimite(config.tipoEmpresa) === 'limite' ? '' : ' do ' + nomeDoLimite(config.tipoEmpresa)} (${dinheiro(config.limiteMei)}). Procure um contador.`
+              : `Atenção: você já usou ${Math.round(m.percentual)}% do limite${nomeDoLimite(config.tipoEmpresa) === 'limite' ? '' : ' do ' + nomeDoLimite(config.tipoEmpresa)} em ${anoAtual}. Restam ${dinheiro(m.restante)}.` +
                 (m.projecao ? ` No ritmo atual o ano fecha perto de ${dinheiro(m.projecao)}${m.projecao > config.limiteMei ? ', acima do limite' : ''}.` : '')
           } Conta só o que foi lançado no app.</p>`;
     const avisoHtml = '<h1 class="so-leitor">Histórico</h1>' + avisoMei + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
@@ -168,7 +168,7 @@ export async function telaHistorico(caixa, usuario) {
       caixa.innerHTML =
         avisoHtml +
         seletor +
-        htmlAno({ ano: anoTela, resumo: resumoDoAno(dias, anoTela), limite: config.limiteMei, anoAtual: hojeISO().slice(0, 4) });
+        htmlAno({ ano: anoTela, resumo: resumoDoAno(dias, anoTela), limite: config.limiteMei, tipo: config.tipoEmpresa, anoAtual: hojeISO().slice(0, 4) });
       return;
     }
 

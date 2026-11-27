@@ -1,7 +1,7 @@
 // HTML da visão do ano. Só monta a tela; quem baixa a planilha e troca de ano é o historico.js.
 import { dinheiro } from './formatos.js';
 import { nomeDoMes } from './mes.js';
-import { usoDoLimite } from './mei.js';
+import { usoDoLimite, nomeDoLimite } from './mei.js';
 
 const linha = (rotulo, valor, destaque = '') =>
   `<div class="resumo ${destaque}"><span>${rotulo}</span><b>${valor}</b></div>`;
@@ -10,7 +10,7 @@ const soMes = (ym) => nomeDoMes(ym).split(' de ')[0]; // "outubro de 2026" vira 
 const maiuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
 // ano = '2026'; resumo = resumoDoAno; limite = limite anual do MEI; anoAtual = ano de hoje (desliga "Próximo")
-export function htmlAno({ ano, resumo, limite, anoAtual }) {
+export function htmlAno({ ano, resumo, limite, anoAtual, tipo = 'MEI' }) {
   const t = resumo.totais;
   const maior = Math.max(0, ...resumo.meses.map((m) => m.faturamento));
   const mei = usoDoLimite(t.faturamento, limite);
@@ -51,13 +51,13 @@ export function htmlAno({ ano, resumo, limite, anoAtual }) {
     </section>
 
     <section class="cartao">
-      <h2>Limite do MEI em ${ano}</h2>
+      <h2>Limite${nomeDoLimite(tipo) === 'limite' ? '' : ' do ' + nomeDoLimite(tipo)} em ${ano}</h2>
       ${linha('Faturado no ano', dinheiro(t.faturamento))}
       ${linha('Limite anual', dinheiro(limite))}
       <div class="medidor" role="img" aria-label="${Math.round(mei.percentual)}% do limite usado"><i style="width:${mei.percentual}%"></i></div>
       <p class="suave">${
         mei.estourou
-          ? 'Você passou do limite lançado aqui. Procure um contador.'
+          ? 'Você passou do limite. Procure um contador.'
           : `Você usou ${Math.round(mei.percentual)}% do limite. Restam ${dinheiro(mei.restante)}.`
       } Conta só o que foi lançado no app.</p>
     </section>

@@ -1,5 +1,18 @@
 // Contas do limite anual do MEI. Funções puras, testadas em mei.test.js.
 
+// Tipos de empresa: nome na tela e limite anual sugerido (o usuário pode digitar outro valor nos Ajustes).
+export const TIPOS_EMPRESA = {
+  MEI: { nome: 'MEI', limite: 81000 },
+  ME: { nome: 'ME (Microempresa)', limite: 360000 },
+  EPP: { nome: 'EPP (Pequeno Porte)', limite: 4800000 },
+  OUTRO: { nome: 'Limite próprio', limite: 0 },
+};
+
+// Nome curto do tipo ('MEI', 'ME', 'EPP' ou 'limite'), usado nos títulos e avisos.
+export function nomeDoLimite(tipo) {
+  return tipo === 'OUTRO' ? 'limite' : (TIPOS_EMPRESA[tipo] ? tipo : 'MEI');
+}
+
 // Soma o faturamento dos dias fechados do ano informado (conta só o que foi lançado no app).
 export function faturadoNoAno(dias, ano) {
   return dias

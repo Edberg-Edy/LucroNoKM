@@ -6,6 +6,7 @@ export function padroes() {
     kmPorLitro: 35,
     precoLitro: 6.2,
     diasPorMes: 24, // dias trabalhados por mês, usado para ratear os custos fixos
+    tipoEmpresa: 'MEI', // MEI | ME | EPP | OUTRO: muda o nome e o limite sugerido do faturamento anual
     limiteMei: 81000, // limite anual de faturamento do MEI (R$)
     contasMes: 0, // contas pessoais que o lucro do mês precisa cobrir (R$). 0 = não usar o acompanhamento
     plataformas: ['iFood', 'Rappi', '99', 'Loggi', 'Particular'],

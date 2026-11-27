@@ -807,9 +807,9 @@ a {
 .item-dia .acoes .x { width: 40px; }
 .item-dia .detalhe small { font-size: 16px; }
 
-/* Abastecimento avulso (sem dia aberto) com a mesma largura do cartão "Abrir o dia" */
+/* Abrir o dia e Abastecimento lado a lado no computador (ocupam toda a largura de sua coluna) */
 @media (min-width: 900px) {
-  .estreito + #lugarAbastecer { max-width: 520px; margin-left: auto; margin-right: auto; }
+  .painel .estreito { max-width: none; margin-left: 0; margin-right: 0; }
 }
 
 .como summary { cursor: pointer; color: var(--destaque); font-weight: 600; padding: 8px 0; }
@@ -835,4 +835,9 @@ a {
 }
 @media (min-width: 1500px) {
   .painel.tres { column-count: 3; }
+}
+
+/* Combustível do histórico: cartões mais enxutos no computador */
+@media (min-width: 900px) {
+  .compacto { max-width: 560px; }
 }

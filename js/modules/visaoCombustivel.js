@@ -47,14 +47,14 @@ export function htmlCombustivelMes({ ym, atual, lista, fechado, precoLitro, apag
       ${fechado ? '<p class="suave">🔒 Mês fechado: a lista não pode ser alterada. Reabra o mês na aba Mês para editar.</p>' : ''}
     </section>
 
-    <section class="cartao indicadores">
+    <section class="cartao indicadores compacto">
       <div><span>Abastecimentos</span><b>${r.abastecimentos}</b></div>
       <div><span>Litros</span><b>${litrosBR(r.litros)} L</b></div>
-      <div><span>Gasto${r.valorEstimado ? ' (estimado)' : ''}</span><b>${dinheiro(r.valor)}</b></div>
+      <div><span>Gasto</span><b>${dinheiro(r.valor)}</b></div>
       <div><span>Consumo</span><b>${consumo}</b></div>
     </section>
 
-    <section class="cartao">
+    <section class="cartao compacto">
       <h2>Abastecimentos do mês</h2>
       ${itens}
       <p class="suave" style="margin-top:8px">Para registrar um novo, use a aba Hoje.</p>
