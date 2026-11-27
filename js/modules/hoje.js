@@ -14,7 +14,7 @@ import { ultimoBackup } from './backup.js';
 import { mostrarBoasVindas, boasVindasDispensado, dispensarBoasVindas, htmlBoasVindas } from './boasvindas.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
 
-const categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros'];
+let categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros']; // troca pelos nomes dos Ajustes ao carregar
 const KM_ALERTA = 400; // acima disso o app pergunta se o odômetro está certo (pega erro de digitação)
 
 // "raiz" é o espaço da tela onde a aba aparece; "usuario" é quem está logado.
@@ -52,6 +52,7 @@ export async function telaHoje(raiz, usuario) {
   ].filter(Boolean);
   raiz.querySelector('#hojeAvisos').innerHTML = lembretes.map((t) => `<p class="aviso-topo" role="status">${esc(t)}</p>`).join('');
 
+  if (Array.isArray(config.categoriasDespesa) && config.categoriasDespesa.length) categorias = config.categoriasDespesa;
   let categoria = categorias[0]; // categoria de despesa selecionada
   let editandoDespesa = null; // posição da despesa que está sendo editada (null = lançando uma nova)
   let confirmarDescarte = false; // true depois do primeiro toque em "Descartar este dia"
@@ -197,7 +198,7 @@ export async function telaHoje(raiz, usuario) {
           ${categorias
             .map(
               (c) =>
-                `<button type="button" class="chip" data-categoria="${c}" aria-pressed="${c === categoria}">${c}</button>`
+                `<button type="button" class="chip" data-categoria="${esc(c)}" aria-pressed="${c === categoria}">${esc(c)}</button>`
             )
             .join('')}
         </div>

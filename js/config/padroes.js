@@ -9,6 +9,7 @@ export function padroes() {
     tipoEmpresa: 'MEI', // MEI | ME | EPP | OUTRO: muda o nome e o limite sugerido do faturamento anual
     limiteMei: 81000, // limite anual de faturamento do MEI (R$)
     contasMes: 0, // contas pessoais que o lucro do mês precisa cobrir (R$). 0 = não usar o acompanhamento
+    categoriasDespesa: ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros'], // botões da despesa do dia (editáveis)
     plataformas: ['iFood', 'Rappi', '99', 'Loggi', 'Particular'],
     // Manutenção: preço da peça e quantos km ela dura
     manutencao: [

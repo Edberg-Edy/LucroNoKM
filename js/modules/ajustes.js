@@ -226,6 +226,21 @@ export async function telaAjustes(caixa, usuario) {
       </section>
 
       <section class="cartao">
+        <h2>Categorias de despesa</h2>
+        ${config.categoriasDespesa
+          .map(
+            (p, i) => `
+          <div class="linha l1">
+            <input type="text" data-k="categoriasDespesa.${i}" value="${esc(p)}" maxlength="30" aria-label="Nome da categoria">
+            <button type="button" class="x" data-acao="remover:categoriasDespesa:${i}" aria-label="Excluir categoria" ${config.categoriasDespesa.length <= 1 ? 'disabled' : ''}>✕</button>
+          </div>`
+          )
+          .join('')}
+        <button type="button" class="botao secundario" data-acao="adicionar:categoriasDespesa">+ Categoria</button>
+        <p class="suave">São os botões da despesa do dia. Despesas já lançadas mantêm o nome antigo.</p>
+      </section>
+
+      <section class="cartao">
         <h2>Plataformas</h2>
         ${config.plataformas
           .map(
@@ -507,6 +522,11 @@ export async function telaAjustes(caixa, usuario) {
         return;
       }
       // Duas plataformas com o mesmo nome dividiriam o mesmo campo de ganho no fechamento do dia
+      if (caminho[0] === 'categoriasDespesa' && config.categoriasDespesa.some((p, i) => i !== Number(caminho[1]) && p.toLowerCase() === valor.toLowerCase())) {
+        mostrarStatus('Já existe uma categoria com esse nome.');
+        desenhar();
+        return;
+      }
       if (caminho[0] === 'plataformas' && config.plataformas.some((p, i) => i !== Number(caminho[1]) && p.toLowerCase() === valor.toLowerCase())) {
         mostrarStatus('Já existe uma plataforma com esse nome.');
         desenhar();
@@ -568,18 +588,19 @@ export async function telaAjustes(caixa, usuario) {
       manutencao: { item: 'Novo item', preco: 0, duracaoKm: 10000 },
       fixos: { item: 'Novo custo', valorMensal: 0 },
       plataformas: 'Nova plataforma',
+      categoriasDespesa: 'Nova categoria',
     };
 
     if (acao === 'adicionar') {
       let novo = modelos[lista];
-      if (lista === 'plataformas') {
+      if (lista === 'plataformas' || lista === 'categoriasDespesa') {
         let n = 1;
-        while (config.plataformas.some((p) => p.toLowerCase() === (n === 1 ? novo : `${novo} ${n}`).toLowerCase())) n++;
+        while (config[lista].some((p) => p.toLowerCase() === (n === 1 ? novo : `${novo} ${n}`).toLowerCase())) n++;
         if (n > 1) novo = `${novo} ${n}`;
       }
       config[lista].push(novo);
     }
-    if (acao === 'remover') config[lista].splice(Number(posicao), 1);
+    if (acao === 'remover' && !(lista === 'categoriasDespesa' && config[lista].length <= 1)) config[lista].splice(Number(posicao), 1);
 
     desenhar();
     salvar();
