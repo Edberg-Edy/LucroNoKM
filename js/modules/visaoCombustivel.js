@@ -38,7 +38,7 @@ export function htmlCombustivelMes({ ym, atual, lista, fechado, precoLitro, apag
     : '<p class="suave">Nenhum abastecimento neste mês.</p>';
 
   return `
-    <section class="cartao">
+    <section class="cartao compacto">
       <div class="nav-semana">
         <button type="button" class="ghost" data-mes="anterior">‹ Anterior</button>
         <b>${nomeDoMes(ym)}</b>

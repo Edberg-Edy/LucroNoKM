@@ -51,6 +51,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 46 | Cards de combustível em pares (mês: valor/litros/consumo/custo por km; semana: km/km por litro/litros/valor) e pior mês no ano | ✅ v0.46 |
 | 47 | Semana sem o limite do MEI e cartões do histórico balanceados no computador; mês com "Seu dinheiro" e "Custos fixos" mais claros; planilha compartilhável no celular; diagnóstico ignora erro de extensão | ✅ v0.47 |
 | 48 | Hoje no computador com Abrir o dia e Abastecimento lado a lado; despesas editáveis; tipo de empresa (MEI/ME/EPP/outro) com limite editável no Ano; Combustível do histórico sem "(estimado)" e mais enxuto | ✅ v0.48 |
+| 49 | Semana: Meta antes do Resumo, nomes mais claros; total em Por plataforma no mês; Combustível do histórico centralizado | ✅ v0.49 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |

@@ -92,7 +92,7 @@ export function htmlGuardarSemana(t, f) {
   }
   return `
       <section class="cartao">
-        <h2>Para guardar na semana</h2>
+        <h2>Guardar na semana</h2>
         ${linha('Combustível', dinheiro(t.combustivel))}
         ${linha('Manutenção da moto', dinheiro(t.manutencao))}
         ${linha('Despesas', dinheiro(t.despesas))}
@@ -106,10 +106,9 @@ export function htmlGuardarSemana(t, f) {
 export function htmlCombustivelSemana(c) {
   const real = c.real;
   const kmPorLitro = real && real.kmPorLitro !== null ? real.kmPorLitro : real && real.aproximado ? real.aproximado.kmPorLitro : c.kmPorLitroUsado;
-  const estimado = !real || real.valorEstimado;
   const valor = real ? real.valor : c.estimadoValor;
   const litros = real ? real.litros : c.estimadoLitros;
-  const sufixo = !real ? ' (estimado)' : estimado ? ' (litros × preço dos Ajustes)' : '';
+  const sufixo = !real ? ' (estimado)' : '';
   return `
       <section class="cartao indicadores">
         <div><span>Km rodados</span><b>${Math.round(c.km)}</b></div>
@@ -236,7 +235,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
 
     <div class="col b">
     <section class="cartao indicadores">
-      <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
+      <div><span>Dias de trabalho</span><b>${t.diasTrabalhados}</b></div>
       <div><span>Lucro médio por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
       <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
       <div><span>Lucro por km</span><b>${t.lucroPorKm === null ? '—' : dinheiro(t.lucroPorKm)}</b></div>
@@ -258,7 +257,7 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
                 dinheiro(p.valor)
               )
             )
-            .join('')}</section>`
+            .join('')}${linha('Total', dinheiro(resumo.plataformas.reduce((x, p) => x + p.valor, 0)), 'total')}</section>`
         : ''
     }
     </div>

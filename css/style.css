@@ -839,5 +839,5 @@ a {
 
 /* Combustível do histórico: cartões mais enxutos no computador */
 @media (min-width: 900px) {
-  .compacto { max-width: 560px; }
+  .compacto { max-width: 560px; margin-left: auto; margin-right: auto; }
 }

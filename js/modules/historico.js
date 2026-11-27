@@ -243,7 +243,7 @@ export async function telaHistorico(caixa, usuario) {
           <b>${dataBR(datas[0]).slice(0, 5)} a ${dataBR(datas[6]).slice(0, 5)}</b>
           <button type="button" class="ghost" data-semana="proxima" ${inicio >= semanaAtual ? 'disabled' : ''}>Próxima ›</button>
         </div>
-        <h2 style="margin-top:8px">Lucro</h2>
+        <h2 style="margin-top:8px">Lucro do dia</h2>
         ${htmlGraficoLucro(semana.porDia, maximo, selecionado)}
         <p class="suave legenda"><span class="verde">Verde</span>: bateu a meta · <span class="amarelo">Amarelo</span>: lucro abaixo da meta · <span class="vermelho">Vermelho</span>: prejuízo</p>
       </section>
@@ -256,16 +256,17 @@ export async function telaHistorico(caixa, usuario) {
       </div>
 
       <div class="col b">
-      <section class="cartao">
-        <h2>Resumo da semana</h2>
-        ${linha('Faturamento', dinheiro(t.faturamento))}
-        ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
-        ${linha('Despesas', '− ' + dinheiro(t.despesas))}
-        ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
-        ${linha('Custos fixos', '− ' + dinheiro(t.fixos))}
-        ${linha('Total gasto', '− ' + dinheiro(t.gastos), 'total')}
-        ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
-      </section>
+      ${htmlMetaSemana(
+        metaDaSemana({
+          lucro: t.lucro,
+          meta: config.meta,
+          diasPorMes: config.diasPorMes,
+          datas,
+          hoje: hojeISO(),
+          hojeFechado: dias.some((d) => d.data === hojeISO()),
+          diasTrabalhados: t.diasTrabalhados,
+        })
+      )}
 
       ${htmlGuardarSemana(
         t,
@@ -288,7 +289,7 @@ export async function telaHistorico(caixa, usuario) {
       )}
 
       <section class="cartao indicadores">
-        <div><span>Dias trabalhados</span><b>${t.diasTrabalhados}</b></div>
+        <div><span>Dias de trabalho</span><b>${t.diasTrabalhados}</b></div>
         <div><span>Lucro médio por dia</span><b>${t.mediaPorDia === null ? '—' : dinheiro(t.mediaPorDia)}</b></div>
         <div><span>Km rodados</span><b>${Math.round(t.km)}</b></div>
         <div><span>Lucro por km</span><b>${t.lucroPorKm === null ? '—' : dinheiro(t.lucroPorKm)}</b></div>
@@ -297,17 +298,16 @@ export async function telaHistorico(caixa, usuario) {
         <div><span>Vs. semana anterior</span><b>${textoVariacao}</b></div>
       </section>
       ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}
-      ${htmlMetaSemana(
-        metaDaSemana({
-          lucro: t.lucro,
-          meta: config.meta,
-          diasPorMes: config.diasPorMes,
-          datas,
-          hoje: hojeISO(),
-          hojeFechado: dias.some((d) => d.data === hojeISO()),
-          diasTrabalhados: t.diasTrabalhados,
-        })
-      )}
+      <section class="cartao">
+        <h2>Resumo da semana</h2>
+        ${linha('Faturamento', dinheiro(t.faturamento))}
+        ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
+        ${linha('Despesas', '− ' + dinheiro(t.despesas))}
+        ${linha('Manutenção da moto', '− ' + dinheiro(t.manutencao))}
+        ${linha('Custos fixos', '− ' + dinheiro(t.fixos))}
+        ${linha('Total gasto', '− ' + dinheiro(t.gastos), 'total')}
+        ${linha('Lucro líquido', dinheiro(t.lucro), 'total')}
+      </section>
 
       ${
         semana.plataformas.length

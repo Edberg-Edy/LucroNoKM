@@ -96,7 +96,8 @@ test('semana sem valor pago: consumo aproximado aparece no lugar do medido', () 
   const dias = [{ data: '2026-10-27', calculados: { km: 130, combustivel: 31.2 }, snapshot: { kmPorLitro: 25 } }];
   const lista = [{ id: 'a', data: '2026-10-26', odometro: 1000, litros: 3, cheio: false }, { id: 'b', data: '2026-10-27', odometro: 1130, litros: 5.6, cheio: false }];
   const html = htmlCombustivelSemana(combustivelDoPeriodo(dias, lista, ['2026-10-26', '2026-10-27'], 6));
-  assert.match(html, /Valor do combustível \(litros × preço dos Ajustes\)/);
+  assert.match(html, /Valor do combustível/);
+  assert.doesNotMatch(html, /preço dos Ajustes/);
   assert.match(html, /23,2 km\/l/);
 });
 
