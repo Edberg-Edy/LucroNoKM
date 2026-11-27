@@ -26,6 +26,8 @@ export function registrarErro(origem, erro, { agora = new Date(), armazem = arma
   if (!armazem) return;
   const mensagem = String((erro && erro.message) || erro || 'erro sem mensagem').slice(0, 300);
   const pilha = erro && erro.stack ? String(erro.stack).slice(0, 600) : '';
+  // erro de extensão do navegador (MetaMask, tradutor etc.) não é do app: não entra no diagnóstico
+  if (/-extension:\/\/|^moz-extension|^safari-extension/m.test(String((erro && erro.stack) || ''))) return;
   const lista = lerErros(armazem);
   const ultimo = lista[lista.length - 1];
   if (ultimo && iguais(ultimo, { origem, mensagem })) {

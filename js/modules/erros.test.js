@@ -54,3 +54,13 @@ test('limpar apaga tudo e o diagnóstico sai em texto', () => {
   assert.deepEqual(lerErros(armazem), []);
   assert.match(textoDiagnostico([]), /Erros guardados: 0/);
 });
+
+test('erro vindo de extensão do navegador não entra no diagnóstico', () => {
+  const armazem = { dados: {}, getItem(k) { return this.dados[k] || null; }, setItem(k, v) { this.dados[k] = v; }, removeItem(k) { delete this.dados[k]; } };
+  const deExtensao = new Error('Failed to connect to MetaMask');
+  deExtensao.stack = 'Error: x\n    at Object.connect (chrome-extension://abc/scripts/inpage.js:9:6166)';
+  registrarErro('promessa', deExtensao, { armazem });
+  assert.deepEqual(lerErros(armazem), []);
+  registrarErro('promessa', new Error('erro do app'), { armazem });
+  assert.equal(lerErros(armazem).length, 1);
+});

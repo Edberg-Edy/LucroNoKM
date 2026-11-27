@@ -1,9 +1,9 @@
-// Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI) e visão do mês (fechamento mensal).
+// Aba Histórico: visão da semana (gráficos, resumo, lista de dias com editar e excluir, limite do MEI no alerta do topo) e visão do mês (fechamento mensal).
 import { listarDiasFechadosDoAno, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
-import { faturadoNoAno, usoDoLimite, alertaMei } from './mei.js';
+import { faturadoNoAno, alertaMei } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
 import { resumoDoAno } from './ano.js';
 import { htmlAno } from './visaoAno.js';
@@ -228,10 +228,6 @@ export async function telaHistorico(caixa, usuario) {
     const v = variacao(t.lucro, anterior.totais.lucro);
     const textoVariacao = v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)}%`;
 
-    const ano = datas[3].slice(0, 4);
-    const faturado = faturadoNoAno(dias, ano);
-    const mei = usoDoLimite(faturado, config.limiteMei);
-
     const lista = dias
       .filter((d) => datas.includes(d.data) && (!selecionado || d.data === selecionado))
       .sort((a, b) => (a.data < b.data ? 1 : -1));
@@ -361,19 +357,6 @@ export async function telaHistorico(caixa, usuario) {
       </section>
       </div>
 
-      <div class="col d">
-      <section class="cartao">
-        <h2>Limite do MEI em ${ano}</h2>
-        ${linha('Faturado no ano', dinheiro(faturado))}
-        ${linha('Limite anual', dinheiro(config.limiteMei))}
-        <div class="medidor" role="img" aria-label="${Math.round(mei.percentual)}% do limite usado"><i style="width:${mei.percentual}%"></i></div>
-        <p class="suave">${
-          mei.estourou
-            ? 'Você passou do limite lançado aqui. Procure um contador.'
-            : `Você usou ${Math.round(mei.percentual)}% do limite. Restam ${dinheiro(mei.restante)}.`
-        } Conta só o que foi lançado no app.</p>
-      </section>
-      </div>
       </div>`;
   }
 
@@ -526,8 +509,7 @@ export async function telaHistorico(caixa, usuario) {
     }
     if (botao.dataset.acao === 'csvAno') {
       baixarCSV(anoTela, csvDoAno(dias, anoTela));
-      aviso = 'Planilha baixada.';
-      return desenhar();
+      return;
     }
     if (botao.dataset.acao === 'irHoje') {
       location.hash = 'hoje';
@@ -535,8 +517,7 @@ export async function telaHistorico(caixa, usuario) {
     }
     if (botao.dataset.acao === 'csv') {
       baixarCSV(ym, csvDoMes(dias, ym));
-      aviso = 'Planilha baixada.';
-      return desenhar();
+      return;
     }
     if (botao.dataset.abEditar) {
       try {

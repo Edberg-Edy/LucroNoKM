@@ -826,3 +826,13 @@ a {
 .indicadores.sem-caixa { background: none; border: 0; padding: 0; margin: 0 0 8px; box-shadow: none; }
 .indicadores b.mais { color: var(--vermelho); }
 .indicadores b.menos { color: var(--verde); }
+
+/* Etapa 47: no computador os cartões do histórico (semana e mês) fluem em colunas balanceadas, na mesma ordem do celular */
+@media (min-width: 900px) {
+  .painel.tres { display: block; column-count: 2; column-gap: 20px; }
+  .painel.tres > .col { display: contents; }
+  .painel.tres .cartao { break-inside: avoid; }
+}
+@media (min-width: 1500px) {
+  .painel.tres { column-count: 3; }
+}

@@ -59,8 +59,19 @@ function csvDoPeriodo(dias, periodo) {
   return BOM + [cabecalho, ...linhas, total].map((l) => l.map(celula).join(SEPARADOR)).join('\r\n') + '\r\n';
 }
 
-// Faz o navegador baixar o arquivo.
-export function baixarCSV(nome, texto) {
+// No celular abre a folha "Compartilhar" (o usuário escolhe Planilhas, Excel, Drive, WhatsApp...), porque só baixar o .csv
+// costuma cair num app que não abre planilha. No computador, ou se o celular não puder compartilhar arquivo, baixa direto.
+export async function baixarCSV(nome, texto) {
+  try {
+    const toque = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    const arquivo = new File(['\ufeff' + texto.replace(/^\ufeff/, '')], `lucronokm-${nome}.csv`, { type: 'text/csv' });
+    if (toque && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      await navigator.share({ files: [arquivo], title: `LucroNoKM ${nome}` });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return; // o usuário fechou a folha de compartilhar
+  }
   const blob = new Blob([texto], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

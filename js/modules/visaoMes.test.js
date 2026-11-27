@@ -48,13 +48,13 @@ test('mês sem abastecimento explica onde registrar, sem quebrar', () => {
 test('custos fixos: mês terminado com poucos dias mostra o que ficou sem desconto', () => {
   const html = montar({ abastecimentos: [] }); // 2 dias × 7,50 = 15 descontados de 196,05 devidos
   assert.match(html, /Custos fixos do mês/);
-  assert.match(html, /ficaram R\$\s181,05 de custos fixos sem desconto/);
-  assert.match(html, /O lucro real do mês é R\$\s118,95/); // 300 de lucro - 181,05
+  assert.match(html, /Separe também os R\$\s181,05 que faltaram/);
+  assert.match(html, /Lucro real do mês: R\$\s118,95/); // 300 de lucro - 181,05
 });
 
 test('custos fixos: mês em andamento só mostra o descontado até agora', () => {
   const html = montar({ abastecimentos: [], terminou: false });
-  assert.match(html, /Descontados até agora/);
+  assert.match(html, /Cada dia trabalhado desconta uma parte/);
   assert.doesNotMatch(html, /sem desconto/);
 });
 
@@ -86,7 +86,7 @@ test('semana: com abastecimento aparecem gasto, litros, preço médio e consumo 
 test('mês com abastecimentos sem valor pago mostra o gasto estimado e o consumo aproximado', () => {
   const sem = (id, data, odometro, litros) => ({ id, data, odometro, litros, cheio: false });
   const html = montar({ abastecimentos: [sem('a', '2026-08-31', 1000, 3), sem('b', '2026-09-02', 1130, 5.6)] });
-  assert.match(html, /Valor abastecido \(litros × preço dos Ajustes\)/);
+  assert.match(html, /Valor abastecido/);
   assert.match(html, /Consumo médio \(aproximado\)/);
   assert.match(html, /23,2 km\/l/);
   assert.doesNotMatch(html, /Preço médio do litro/);
@@ -109,4 +109,12 @@ test('semana: "guardar" usa os custos fixos previstos da semana inteira e avisa 
   assert.match(html, /R\$\s373,24/); // 177,36 + 131,40 + 10 + 54,48
   assert.match(html, /Faltam R\$\s15,24 de custos fixos\. Restam 1 dia de trabalho: R\$\s15,24 por dia/);
   assert.match(htmlGuardarSemana(t, null), /R\$\s358,00/);
+});
+
+test('mês: "Seu dinheiro do mês" separa o que já foi usado do que fica guardado (moto e custos fixos)', () => {
+  const html = montar({ abastecimentos: [] });
+  assert.match(html, /Já usado: combustível e despesas/);
+  assert.match(html, /Para guardar: moto e custos fixos/);
+  assert.match(html, /Guardar de verdade:/);
+  assert.doesNotMatch(html, /Guardar \(combustível, moto, custos fixos e despesas\)/);
 });

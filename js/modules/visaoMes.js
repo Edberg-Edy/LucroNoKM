@@ -138,7 +138,7 @@ function htmlCombustivel(c) {
       <h2>Combustível do mês</h2>
       ${aviso}
       <div class="indicadores sem-caixa">
-        <div><span>Valor abastecido${c.valorEstimado ? ' (litros × preço dos Ajustes)' : ''}</span><b>${dinheiro(c.valor)}</b></div>
+        <div><span>Valor abastecido</span><b>${dinheiro(c.valor)}</b></div>
         <div><span>Litros abastecidos</span><b>${litrosBR(c.litros)} L</b></div>
         <div><span>Consumo médio${c.kmPorLitro === null ? ' (aproximado)' : ''}</span><b>${consumo === null ? '—' : kmL(consumo) + ' km/l'}</b></div>
         <div><span>Custo por km</span><b>${c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm)}</b></div>
@@ -150,25 +150,24 @@ function htmlCombustivel(c) {
     </section>`;
 }
 
-// f = resultado de acertoDosFixos; lucro = lucro líquido do mês
+// f = resultado de acertoDosFixos; lucro = lucro líquido do mês. Conta só deste mês (nada de meses anteriores).
 function htmlFixos(f, lucro) {
   let texto;
   if (f.situacao === 'andamento') {
-    texto = `Descontados até agora ${dinheiro(f.descontado)} dos ${dinheiro(f.devido)} devidos no mês (cada dia trabalhado desconta uma parte).`;
+    texto = 'Cada dia trabalhado desconta uma parte. O que faltar vai sendo descontado nos próximos dias.';
   } else if (f.situacao === 'falta') {
-    texto =
-      `Você trabalhou menos dias do que o previsto nos Ajustes, então ficaram ${dinheiro(f.diferenca)} de custos fixos sem desconto. ` +
-      `Separe esse valor também (DAS e internet são cobrados inteiros). O lucro real do mês é ${dinheiro(lucro - f.diferenca)}.`;
+    texto = `Você trabalhou menos dias que o previsto nos Ajustes. Separe também os ${dinheiro(f.diferenca)} que faltaram: DAS e internet são cobrados inteiros. Lucro real do mês: ${dinheiro(lucro - f.diferenca)}.`;
   } else if (f.situacao === 'sobra') {
-    texto = `Foram descontados ${dinheiro(-f.diferenca)} a mais que o devido (mais dias que o previsto). O lucro real do mês é ${dinheiro(lucro - f.diferenca)}.`;
+    texto = `Foram descontados ${dinheiro(-f.diferenca)} a mais que o devido (mais dias que o previsto). Lucro real do mês: ${dinheiro(lucro - f.diferenca)}.`;
   } else {
-    texto = 'Os custos fixos do mês foram todos descontados pelos dias trabalhados.';
+    texto = 'Todos os custos fixos do mês foram descontados pelos dias trabalhados.';
   }
   return `
     <section class="cartao">
       <h2>Custos fixos do mês</h2>
-      ${linha('Devido no mês (Ajustes)', dinheiro(f.devido))}
-      ${linha('Descontado nos dias', dinheiro(f.descontado))}
+      ${linha('Total do mês (Ajustes)', dinheiro(f.devido))}
+      ${linha('Já descontado nos dias', dinheiro(f.descontado))}
+      ${linha('Falta descontar', dinheiro(Math.max(0, f.devido - f.descontado)))}
       <p class="suave">${texto}</p>
     </section>`;
 }
@@ -219,11 +218,13 @@ export function htmlMes({ ym, resumo, anterior, info, terminou, atual, progresso
 
     <section class="cartao">
       <h2>Seu dinheiro do mês</h2>
+      ${linha('Faturamento', dinheiro(t.faturamento))}
+      ${linha('Já usado: combustível e despesas', '− ' + dinheiro(t.combustivel + t.despesas))}
+      ${linha('Para guardar: moto e custos fixos', '− ' + dinheiro(t.manutencao + t.fixos))}
       ${linha('Livre para gastar', dinheiro(t.lucro), 'total')}
-      ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(t.guardar + t.combustivel + t.despesas), 'total')}
       ${
         temDias
-          ? `<p class="suave" style="margin-top:8px">Separe ${dinheiro(t.guardar + t.combustivel + t.despesas)} deste mês: ${dinheiro(t.combustivel)} para os abastecimentos, ${dinheiro(t.manutencao)} para a moto, ${dinheiro(t.fixos)} para os custos fixos e ${dinheiro(t.despesas)} para repor as despesas.${t.lucro < 0 ? ' O mês não cobriu os custos.' : ''}</p>`
+          ? `<p class="suave" style="margin-top:8px">Guardar de verdade: ${dinheiro(t.manutencao + t.fixos)} (${dinheiro(t.manutencao)} para a moto e ${dinheiro(t.fixos)} para os custos fixos). O combustível e as despesas já saíram do caixa durante o mês.</p>`
           : ''
       }
     </section>
