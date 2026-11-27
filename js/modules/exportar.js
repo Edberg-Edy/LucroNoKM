@@ -21,7 +21,43 @@ const NOME_STATUS = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
 
 // Planilha de um mês ('aaaa-mm') ou de um ano inteiro ('aaaa').
 export const csvDoMes = (dias, ym) => csvDoPeriodo(dias, ym);
-export const csvDoAno = (dias, ano) => csvDoPeriodo(dias, ano);
+
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+// Planilha do ano: uma linha por mês (Janeiro a Dezembro, mesmo os sem dias) e uma linha de total.
+export function csvDoAno(dias, ano) {
+  const doAno = dias.filter((d) => d.data.startsWith(ano + '-'));
+  const plataformas = [];
+  for (const d of doAno) for (const p of d.plataformas || []) if (!plataformas.includes(p.nome)) plataformas.push(p.nome);
+
+  const cabecalho = [
+    'Mês', 'Dias', 'Km', 'Horas', ...plataformas, 'Faturamento', 'Combustível', 'Manutenção', 'Despesas',
+    'Custos fixos', 'Lucro', 'Guardar', 'Corridas',
+  ];
+  const campos = ['faturamento', 'combustivel', 'manutencao', 'despesas', 'fixos', 'lucro', 'guardar', 'corridas'];
+
+  const somar = (lista) => ({
+    dias: lista.length,
+    km: lista.reduce((t, d) => t + (Number(d.calculados.km) || 0), 0),
+    horas: lista.reduce((t, d) => t + (d.horas > 0 ? d.horas : 0), 0),
+    plat: plataformas.map((nome) =>
+      lista.reduce((t, d) => t + (d.plataformas || []).filter((p) => p.nome === nome).reduce((x, p) => x + (Number(p.valor) || 0), 0), 0)
+    ),
+    c: campos.map((campo) => lista.reduce((t, d) => t + (Number(d.calculados[campo]) || 0), 0)),
+  });
+  const linha = (nome, r) => [
+    nome, String(r.dias), num(r.km), r.horas > 0 ? num(r.horas) : '', ...r.plat.map(num),
+    ...r.c.slice(0, 7).map(num), r.c[7] > 0 ? String(r.c[7]) : '',
+  ];
+
+  const linhas = MESES.map((nome, i) => {
+    const ym = `${ano}-${String(i + 1).padStart(2, '0')}`;
+    return linha(nome, somar(doAno.filter((d) => d.data.startsWith(ym + '-'))));
+  });
+  linhas.push(linha('Total', somar(doAno)));
+
+  return BOM + [cabecalho, ...linhas].map((l) => l.map(celula).join(SEPARADOR)).join('\r\n') + '\r\n';
+}
 
 // dias = dias fechados (qualquer período); periodo = 'aaaa-mm' ou 'aaaa'. Uma linha por dia, uma coluna por plataforma e uma linha de total.
 function csvDoPeriodo(dias, periodo) {

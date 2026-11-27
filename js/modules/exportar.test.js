@@ -57,8 +57,12 @@ test('célula protege aspas, ponto e vírgula e fórmulas', () => {
 
 test('planilha do ano junta os meses do ano e ignora outros anos', () => {
   const l = linhas(csvDoAno([dia('2026-01-10', [{ nome: 'iFood', valor: 50 }]), dia('2026-07-02', [{ nome: 'iFood', valor: 70 }]), dia('2025-12-31', [{ nome: 'iFood', valor: 999 }])], '2026'));
-  assert.equal(l.length, 4); // cabeçalho + 2 dias + total
+  assert.equal(l.length, 14); // cabeçalho + 12 meses + total
+  assert.equal(l[1][0], 'Janeiro');
+  assert.equal(l[1][l[0].indexOf('iFood')], '50');
+  assert.equal(l[2][l[0].indexOf('Faturamento')], '0'); // fevereiro sem dias aparece zerado
   assert.equal(l.at(-1)[l[0].indexOf('iFood')], '120');
+  assert.equal(l.at(-1)[1], '2'); // dias trabalhados no ano
 });
 
 test('número negativo continua número na planilha, mas texto que parece fórmula é protegido', () => {
