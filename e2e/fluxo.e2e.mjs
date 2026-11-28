@@ -300,3 +300,19 @@ test('toque na barra da semana abre o dia com Editar; abastecimento sem dia aber
   await pagina.waitForSelector('text=Abastecimento registrado');
   assert.deepEqual(erros, []);
 });
+
+test('aba Manutenção: lança uma troca, mostra a próxima e avisa quando está perto', async () => {
+  await pagina.evaluate(() => { location.hash = 'historico'; });
+  await pagina.waitForSelector('[data-modo="manutencao"]');
+  await pagina.click('[data-modo="manutencao"]');
+  await pagina.waitForSelector('[data-acao="lancarManutencao"]');
+  await pagina.selectOption('#manItem', 'Óleo e filtro');
+  await pagina.fill('#manKm', '2200'); // abaixo do maior odômetro conhecido: óleo (1000 km) já vencido
+  await pagina.fill('#manValor', '40');
+  await pagina.click('[data-acao="lancarManutencao"]');
+  await pagina.waitForSelector('text=Troca lançada');
+  const texto = await pagina.innerText('#conteudo');
+  assert.ok(texto.includes('Óleo e filtro'));
+  assert.ok(texto.includes('próxima: 3.200 km'));
+  assert.ok(texto.includes('R$ 40,00'));
+});

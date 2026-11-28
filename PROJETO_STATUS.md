@@ -54,6 +54,7 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 49 | Semana: Meta antes do Resumo, nomes mais claros; total em Por plataforma no mês; Combustível do histórico centralizado | ✅ v0.49 |
 | 50 | Categorias de despesa editáveis nos Ajustes (nomes, adicionar e excluir) | ✅ v0.50 |
 | 51 | Planilha do ano com uma linha por mês (Janeiro a Dezembro) e total | ✅ v0.51 |
+| 52 | Aba Manutenção no Histórico: lançar trocas (item, data, odômetro, valor) e alerta da próxima troca por km (aviso com 10%) | ✅ v0.52 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |

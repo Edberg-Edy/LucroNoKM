@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Regras do LucroNoKM.
 // 1) Cada usuário só lê e grava o que está dentro da própria conta (users/{uid}/...).
-// 2) Só as coleções que o app usa são liberadas: config, dias, meses e abastecimentos. Qualquer outra é negada.
+// 2) Só as coleções que o app usa são liberadas: config, dias, meses, abastecimentos e manutencoes. Qualquer outra é negada.
 // 3) Os campos principais precisam ter o tipo e o tamanho certos, para um dado quebrado (ou um script malicioso
 //    com a sessão do usuário) não encher a conta nem estragar o histórico. Campos opcionais podem faltar.
 // Estas regras são testadas no GitHub Actions (regras/verificar-regras.mjs) com documentos reais gerados pelo app.
@@ -41,6 +41,14 @@ service cloud.firestore {
         && (opcional(d, 'valor') || (d.valor is number && d.valor >= 0 && d.valor <= 100000));
     }
 
+    function manutencaoValida(d) {
+      return d.keys().size() <= 10
+        && dataIso(d.data)
+        && d.item is string && d.item.size() > 0 && d.item.size() <= 60
+        && d.odometro is number && d.odometro > 0 && d.odometro < 10000000
+        && (opcional(d, 'valor') || (d.valor is number && d.valor >= 0 && d.valor <= 100000));
+    }
+
     function mesValido(d) {
       return d.keys().size() <= 20
         && (opcional(d, 'fechado') || d.fechado is bool)
@@ -62,6 +70,11 @@ service cloud.firestore {
     match /users/{uid}/abastecimentos/{id} {
       allow read, delete: if dono(uid);
       allow create, update: if dono(uid) && abastecimentoValido(request.resource.data);
+    }
+
+    match /users/{uid}/manutencoes/{id} {
+      allow read, delete: if dono(uid);
+      allow create, update: if dono(uid) && manutencaoValida(request.resource.data);
     }
 
     match /users/{uid}/meses/{id} {

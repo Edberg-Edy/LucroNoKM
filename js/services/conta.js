@@ -5,7 +5,7 @@ import { db } from './firebase.js';
 import { emLotes } from './dias.js';
 import { exigirServidor } from './leitura.js';
 
-const COLECOES = ['dias', 'abastecimentos', 'meses', 'config'];
+const COLECOES = ['dias', 'abastecimentos', 'manutencoes', 'meses', 'config'];
 
 // Devolve { total, sincronizado }. sincronizado = false: sem sinal, o servidor apaga quando a internet voltar.
 export async function apagarTodosOsDados(uid) {

@@ -2,6 +2,9 @@
 import { listarDiasFechadosDoAno, buscarDiaAberto, reabrirDia, excluirDia } from '../services/dias.js';
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
+import { listarManutencoes, novaManutencao, excluirManutencao } from '../services/manutencoes.js';
+import { kmAtualDe, mediaKmPorDia, situacaoDosItens } from './manutencao.js';
+import { htmlManutencao } from './visaoManutencao.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, alertaMei, nomeDoLimite } from './mei.js';
 import { csvDoMes, csvDoAno, baixarCSV } from './exportar.js';
@@ -16,7 +19,7 @@ import { acertoDosFixos, totalFixos } from './fixos.js';
 import { htmlCombustivelMes } from './visaoCombustivel.js';
 import { htmlGraficoLucro, htmlGraficoGastos, maiorValor } from './graficos.js';
 import { htmlResultado } from './resultado.js';
-import { hojeISO, dataBR, dinheiro, esc } from './formatos.js';
+import { hojeISO, dataBR, dinheiro, esc, lerNumero } from './formatos.js';
 
 const linha = (rotulo, valor, destaque = '') => `<div class="resumo ${destaque}"><span>${rotulo}</span><b>${valor}</b></div>`;
 const selo = { verde: 'Meta', amarelo: 'Abaixo', vermelho: 'Prejuízo' };
@@ -36,15 +39,17 @@ export async function telaHistorico(caixa, usuario) {
   let config;
   let meses; // meses já gravados (fechamento e checklist), por 'aaaa-mm'
   let diaAberto; // dia que está aberto ou em edição (não entra nos totais até ser salvo), ou null
+  let manutencoes = []; // trocas de manutenção lançadas (se não carregarem, o resto do histórico continua)
   let abastecimentos; // abastecimentos de combustível (se não carregarem, o resto do histórico continua funcionando)
   try {
-    [dias, config, meses, diaAberto, abastecimentos] = await Promise.all([
+    [dias, config, meses, diaAberto, abastecimentos, manutencoes] = await Promise.all([
       // Sem sinal e sem cópia do ano no aparelho: abre mesmo assim, avisando (e tenta de novo ao navegar)
       listarDiasFechadosDoAno(usuario.uid, hojeISO().slice(0, 4)).catch((e) => (e.code === 'sem-servidor' ? null : Promise.reject(e))),
       carregarConfig(usuario.uid),
       listarMeses(usuario.uid),
       buscarDiaAberto(usuario.uid),
       listarAbastecimentos(usuario.uid).catch(() => []),
+      listarManutencoes(usuario.uid).catch(() => []),
     ]);
   } catch (e) {
     caixa.innerHTML = `<section class="cartao"><h1>Histórico</h1>
@@ -89,6 +94,7 @@ export async function telaHistorico(caixa, usuario) {
   } catch (e) {
     // sem sessionStorage: abre na semana
   }
+  let apagandoMan = null; // troca de manutenção que aguarda o segundo toque em ✕
   let apagandoAb = null; // abastecimento que aguarda o segundo toque em ✕
   let anoTela = hojeISO().slice(0, 4); // ano que está na tela (visão do ano)
   let ym = mesDe(hojeISO()); // mês que está na tela (aaaa-mm)
@@ -156,12 +162,25 @@ export async function telaHistorico(caixa, usuario) {
               : `Atenção: você já usou ${Math.round(m.percentual)}% do limite${nomeDoLimite(config.tipoEmpresa) === 'limite' ? '' : ' do ' + nomeDoLimite(config.tipoEmpresa)} em ${anoAtual}. Restam ${dinheiro(m.restante)}.` +
                 (m.projecao ? ` No ritmo atual o ano fecha perto de ${dinheiro(m.projecao)}${m.projecao > config.limiteMei ? ', acima do limite' : ''}.` : '')
           } Conta só o que foi lançado no app.</p>`;
-    const avisoHtml = '<h1 class="so-leitor">Histórico</h1>' + avisoMei + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
+    const situacaoMan = situacaoDosItens({
+      itens: config.manutencao || [],
+      lista: manutencoes,
+      kmAtual: kmAtualDe({ dias, diaAberto, abastecimentos, manutencoes }),
+      mediaKmDia: mediaKmPorDia(dias, hojeISO()),
+    });
+    const alertasMan = situacaoMan.filter((s) => s.nivel === 'chegando' || s.nivel === 'vencido');
+    const avisoManutencao = alertasMan.length
+      ? `<p class="aviso-topo" role="status">${alertasMan
+          .map((s) => (s.nivel === 'vencido' ? `${esc(s.item)}: passou ${Math.round(-s.faltam)} km da troca.` : `${esc(s.item)}: faltam ${Math.round(s.faltam)} km para a troca.`))
+          .join(' ')} <button type="button" class="ghost" data-modo="manutencao">Ver manutenção</button></p>`
+      : '';
+    const avisoHtml = '<h1 class="so-leitor">Histórico</h1>' + avisoMei + avisoManutencao + (aviso ? `<p class="aviso-topo" role="status">${esc(aviso)}</p>` : '') + avisoAberto;
     const seletor = `<div class="modo" role="group" aria-label="Período">
       <button type="button" data-modo="semana" aria-pressed="${modo === 'semana'}">Semana</button>
       <button type="button" data-modo="mes" aria-pressed="${modo === 'mes'}">Mês</button>
       <button type="button" data-modo="ano" aria-pressed="${modo === 'ano'}">Ano</button>
       <button type="button" data-modo="combustivel" aria-pressed="${modo === 'combustivel'}">Combustível</button>
+      <button type="button" data-modo="manutencao" aria-pressed="${modo === 'manutencao'}">Manutenção</button>
     </div>`;
 
     if (modo === 'ano') {
@@ -169,6 +188,19 @@ export async function telaHistorico(caixa, usuario) {
         avisoHtml +
         seletor +
         htmlAno({ ano: anoTela, resumo: resumoDoAno(dias, anoTela), limite: config.limiteMei, tipo: config.tipoEmpresa, anoAtual: hojeISO().slice(0, 4) });
+      return;
+    }
+
+    if (modo === 'manutencao') {
+      caixa.innerHTML =
+        avisoHtml +
+        seletor +
+        htmlManutencao({
+          itens: situacaoMan,
+          lista: manutencoes,
+          sugestaoKm: kmAtualDe({ dias, diaAberto, abastecimentos, manutencoes }),
+          apagandoId: apagandoMan,
+        });
       return;
     }
 
@@ -435,6 +467,57 @@ export async function telaHistorico(caixa, usuario) {
     desenhar();
   }
 
+  // Lançar uma troca: confere os campos e grava. Só a aba Manutenção tem este formulário.
+  async function lancarManutencao() {
+    const aviso2 = caixa.querySelector('#manAviso');
+    const item = caixa.querySelector('#manItem').value;
+    const data = caixa.querySelector('#manData').value;
+    const odometro = lerNumero(caixa.querySelector('#manKm').value);
+    const textoValor = caixa.querySelector('#manValor').value.trim();
+    const valor = textoValor === '' ? 0 : lerNumero(textoValor);
+    let erro = '';
+    if (!item) erro = 'Escolha o item.';
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || data > hojeISO()) erro = 'Confira a data (não pode ser futura).';
+    else if (odometro === null || odometro <= 0 || odometro >= 10000000) erro = 'Informe o odômetro da troca em km.';
+    else if (valor === null || valor > 100000) erro = 'Confira o valor pago.';
+    if (erro) {
+      aviso2.textContent = erro;
+      return;
+    }
+    try {
+      const r = await novaManutencao(usuario.uid, { item, data, odometro, valor });
+      manutencoes = [...manutencoes, { id: r.id, item, data, odometro, valor }];
+      aviso = r.sincronizado ? 'Troca lançada.' : 'Troca salva no aparelho. Sincroniza quando voltar o sinal.';
+    } catch (e) {
+      aviso = 'Não foi possível lançar. Tente de novo.';
+    }
+    desenhar();
+  }
+
+  // Exclusão de troca: o primeiro toque pede confirmação, o segundo exclui.
+  async function excluirMan(id) {
+    if (apagandoMan !== id) {
+      apagandoMan = id;
+      desenhar();
+      setTimeout(() => {
+        if (apagandoMan === id) {
+          apagandoMan = null;
+          desenhar();
+        }
+      }, 4000);
+      return;
+    }
+    try {
+      await excluirManutencao(usuario.uid, id);
+      manutencoes = manutencoes.filter((m) => m.id !== id);
+      aviso = 'Troca excluída.';
+    } catch (e) {
+      aviso = 'Não foi possível excluir. Confira a internet.';
+    }
+    apagandoMan = null;
+    desenhar();
+  }
+
   // Fechar o mês: grava os totais e trava os dias dele.
   async function fecharOMes() {
     const resumo = resumoDoMes(dias, ym);
@@ -529,6 +612,8 @@ export async function telaHistorico(caixa, usuario) {
       return;
     }
     if (botao.dataset.abExcluir) return excluirAb(botao.dataset.abExcluir);
+    if (botao.dataset.manExcluir) return excluirMan(botao.dataset.manExcluir);
+    if (botao.dataset.acao === 'lancarManutencao') return lancarManutencao();
     if (botao.dataset.acao === 'fecharMes') return fecharOMes();
     if (botao.dataset.acao === 'reabrirMes') return reabrirOMes();
 
