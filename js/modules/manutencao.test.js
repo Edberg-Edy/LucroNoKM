@@ -14,6 +14,8 @@ test('próxima troca = última + duração; avisa com 10% e vence no km', () => 
   const s = (km) => situacaoDosItens({ itens, lista, kmAtual: km })[0];
   assert.equal(s(5000).proximoKm, 5500);
   assert.equal(s(5000).nivel, 'ok');
+  assert.equal(Math.round(s(5000).usado), 50); // 500 de 1000 km
+  assert.equal(s(5620).usado, 100); // nunca passa de 100%
   assert.equal(s(5400).nivel, 'chegando'); // faltam 100
   assert.equal(s(5400).faltam, 100);
   assert.equal(s(5500).nivel, 'vencido');

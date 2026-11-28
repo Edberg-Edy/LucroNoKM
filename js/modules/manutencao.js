@@ -39,13 +39,14 @@ export function situacaoDosItens({ itens, lista, kmAtual, mediaKmDia = null }) {
   return itens.map((it) => {
     const trocas = lista.filter((m) => m.item === it.item && Number.isFinite(m.odometro));
     const base = { item: it.item, duracaoKm: it.duracaoKm, real: intervaloReal(lista, it.item) };
-    if (!trocas.length || !(it.duracaoKm > 0)) return { ...base, nivel: 'sem-registro', ultimoKm: null, proximoKm: null, faltam: null, dias: null };
+    if (!trocas.length || !(it.duracaoKm > 0)) return { ...base, nivel: 'sem-registro', ultimoKm: null, proximoKm: null, faltam: null, dias: null, usado: 0 };
     const ultimoKm = Math.max(...trocas.map((m) => m.odometro));
     const proximoKm = ultimoKm + it.duracaoKm;
     const faltam = kmAtual === null ? null : proximoKm - kmAtual;
     let nivel = 'ok';
     if (faltam !== null) nivel = faltam <= 0 ? 'vencido' : faltam <= it.duracaoKm * AVISO ? 'chegando' : 'ok';
     const dias = faltam !== null && faltam > 0 && mediaKmDia > 0 ? Math.ceil(faltam / mediaKmDia) : null;
-    return { ...base, nivel, ultimoKm, proximoKm, faltam, dias };
+    const usado = faltam === null ? 0 : Math.min(100, Math.max(0, ((it.duracaoKm - faltam) / it.duracaoKm) * 100));
+    return { ...base, nivel, ultimoKm, proximoKm, faltam, dias, usado };
   });
 }

@@ -32,9 +32,10 @@ export function htmlResultado(dia) {
     ? `<p class="suave aviso">Informe ${faltas.join(' e ')} para completar os números acima.</p>`
     : '';
 
-  // O combustível entra no que se guarda: ele sai agora no cálculo do dia, mas o abastecimento acontece depois.
-  // As despesas também: foram pagas com o dinheiro da moto, então precisam ser repostas.
-  const totalGuardar = c.combustivel + c.guardar + c.despesas;
+  // Só se separa o que ainda vai ser pago: moto (manutenção) e custos fixos.
+  // Combustível e despesas já saíram do bolso, então ficam em "Já saiu" e não viram dinheiro a guardar.
+  const jaSaiu = c.combustivel + c.despesas;
+  const separar = c.manutencao + c.fixos;
 
   const prejuizo =
     c.lucro < 0 ? ' O dia não cobriu os custos: parte do que você guardar vai sair do seu bolso.' : '';
@@ -80,12 +81,12 @@ export function htmlResultado(dia) {
     </section>
 
     <section class="cartao">
-      <h2>Para guardar</h2>
+      <h2>Separar do dia</h2>
       ${linha('Faturamento', dinheiro(c.faturamento))}
-      ${linha('Menos os gastos', '− ' + dinheiro(c.gastos))}
+      ${linha('Já saiu: combustível e despesas', '− ' + dinheiro(jaSaiu))}
+      ${linha('Separar: moto e custos fixos', '− ' + dinheiro(separar))}
       ${linha('Livre para gastar', dinheiro(c.livre), 'total')}
-      ${linha('Guardar (combustível, moto, custos fixos e despesas)', dinheiro(totalGuardar), 'total')}
-      <p class="suave" style="margin-top:8px">Separe ${dinheiro(totalGuardar)} deste dia: ${dinheiro(c.combustivel)} para o próximo abastecimento, ${dinheiro(c.manutencao)} para a moto, ${dinheiro(c.fixos)} para os custos fixos e ${dinheiro(c.despesas)} para repor as despesas.${prejuizo}</p>
+      <p class="suave" style="margin-top:8px">Separe ${dinheiro(separar)} deste dia: ${dinheiro(c.manutencao)} para a moto e ${dinheiro(c.fixos)} para os custos fixos. O combustível e as despesas já saíram do seu bolso.${prejuizo}</p>
     </section>
     </div>
     </div>`;

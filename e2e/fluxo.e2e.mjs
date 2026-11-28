@@ -105,7 +105,7 @@ test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões'
 
   await semViolacoes('resultado do dia');
   const texto = await pagina.innerText('#conteudo');
-  for (const t of ['Seu dinheiro do dia', 'Gastou no dia', 'Para guardar', 'Total gasto', 'Lucro líquido', 'Livre para gastar', 'Guardar (combustível, moto, custos fixos e despesas)']) {
+  for (const t of ['Seu dinheiro do dia', 'Gastou no dia', 'Separar do dia', 'Total gasto', 'Lucro líquido', 'Livre para gastar', 'Separar: moto e custos fixos']) {
     assert.ok(texto.includes(t), `faltou "${t}" no resultado do dia`);
   }
   assert.match(texto, /Faturamento\s+R\$\s*180,00/);
@@ -308,11 +308,11 @@ test('aba Manutenção: lança uma troca, mostra a próxima e avisa quando está
   await pagina.waitForSelector('[data-acao="lancarManutencao"]');
   await pagina.selectOption('#manItem', 'Óleo e filtro');
   await pagina.fill('#manKm', '2200'); // abaixo do maior odômetro conhecido: óleo (1000 km) já vencido
-  await pagina.fill('#manValor', '40');
   await pagina.click('[data-acao="lancarManutencao"]');
   await pagina.waitForSelector('text=Troca lançada');
   const texto = await pagina.innerText('#conteudo');
   assert.ok(texto.includes('Óleo e filtro'));
   assert.ok(texto.includes('próxima: 3.200 km'));
-  assert.ok(texto.includes('R$ 40,00'));
+  assert.equal(texto.includes('R$ 40,00'), false); // trocas não mostram dinheiro
+  assert.equal(await pagina.locator('.medidor').count() > 0, true);
 });

@@ -16,20 +16,22 @@ const dia = {
 
 test('dinheiro do dia separa combustível, despesas, manutenção e custos fixos', () => {
   const html = htmlResultado(dia);
-  const card = html.slice(html.indexOf('Gastou no dia'), html.indexOf('Para guardar'));
+  const card = html.slice(html.indexOf('Gastou no dia'), html.indexOf('Separar do dia'));
   assert.match(card, /Combustível \(calculado\)<\/span><b>− R\$\s20,00/);
   assert.match(card, /Despesas<\/span><b>− R\$\s5,68/);
   assert.match(card, /Manutenção da moto<\/span><b>− R\$\s15,30/);
   assert.match(card, /Custos fixos<\/span><b>− R\$\s7,54/);
   assert.match(card, /Total gasto<\/span><b>− R\$\s48,52/);
   assert.match(card, /Lucro líquido<\/span><b>R\$\s162,67/);
-  assert.match(html, /Menos os gastos<\/span><b>− R\$\s48,52/);
+  assert.match(html, /Livre para gastar<\/span><b>R\$\s162,67/);
 });
 
-test('guardar inclui combustível e despesas: R$ 20,00 + R$ 15,30 + R$ 7,54 + R$ 5,68 = R$ 48,52', () => {
+test('separar só inclui moto e custos fixos: R$ 15,30 + R$ 7,54 = R$ 22,84; combustível e despesas já saíram', () => {
   const html = htmlResultado(dia);
-  assert.match(html, /Guardar \(combustível, moto, custos fixos e despesas\)<\/span><b>R\$\s48,52/);
-  assert.match(html, /Separe R\$\s48,52 deste dia: R\$\s20,00 para o próximo abastecimento, R\$\s15,30 para a moto, R\$\s7,54 para os custos fixos e R\$\s5,68 para repor as despesas/);
+  assert.match(html, /Já saiu: combustível e despesas<\/span><b>− R\$\s25,68/);
+  assert.match(html, /Separar: moto e custos fixos<\/span><b>− R\$\s22,84/);
+  assert.match(html, /Separe R\$\s22,84 deste dia: R\$\s15,30 para a moto e R\$\s7,54 para os custos fixos\. O combustível e as despesas já saíram/);
+  assert.doesNotMatch(html, /para repor as despesas/);
 });
 
 test('dia no prejuízo ainda avisa que o guardado sai do bolso', () => {

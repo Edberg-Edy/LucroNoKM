@@ -331,7 +331,7 @@ export async function telaHistorico(caixa, usuario) {
       </section>
       ${t.diasTrabalhados ? htmlCombustivelSemana(combustivel) : ''}
       <section class="cartao">
-        <h2>Resumo da semana</h2>
+        <h2>Resultado da semana</h2>
         ${linha('Faturamento', dinheiro(t.faturamento))}
         ${linha('Combustível', '− ' + dinheiro(t.combustivel))}
         ${linha('Despesas', '− ' + dinheiro(t.despesas))}
@@ -473,20 +473,17 @@ export async function telaHistorico(caixa, usuario) {
     const item = caixa.querySelector('#manItem').value;
     const data = caixa.querySelector('#manData').value;
     const odometro = lerNumero(caixa.querySelector('#manKm').value);
-    const textoValor = caixa.querySelector('#manValor').value.trim();
-    const valor = textoValor === '' ? 0 : lerNumero(textoValor);
     let erro = '';
     if (!item) erro = 'Escolha o item.';
     else if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || data > hojeISO()) erro = 'Confira a data (não pode ser futura).';
     else if (odometro === null || odometro <= 0 || odometro >= 10000000) erro = 'Informe o odômetro da troca em km.';
-    else if (valor === null || valor > 100000) erro = 'Confira o valor pago.';
     if (erro) {
       aviso2.textContent = erro;
       return;
     }
     try {
-      const r = await novaManutencao(usuario.uid, { item, data, odometro, valor });
-      manutencoes = [...manutencoes, { id: r.id, item, data, odometro, valor }];
+      const r = await novaManutencao(usuario.uid, { item, data, odometro });
+      manutencoes = [...manutencoes, { id: r.id, item, data, odometro }];
       aviso = r.sincronizado ? 'Troca lançada.' : 'Troca salva no aparelho. Sincroniza quando voltar o sinal.';
     } catch (e) {
       aviso = 'Não foi possível lançar. Tente de novo.';

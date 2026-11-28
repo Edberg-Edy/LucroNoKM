@@ -32,7 +32,7 @@ function montar({ abastecimentos, terminou = true, fixosCfg = [{ valorMensal: 11
 test('mês com abastecimentos mostra valor abastecido, litros, consumo médio e custo por km', () => {
   const html = montar({ abastecimentos: [ab('a', '2026-08-31', 1000, 10, 60), ab('b', '2026-09-02', 1130, 5.6, 33.6)] });
   assert.match(html, /Combustível/);
-  assert.match(html, /Valor abastecido/);
+  assert.match(html, /Pago na bomba/);
   assert.match(html, /Consumo médio/);
   assert.match(html, /Custo por km/);
   assert.match(html, /R\$\s33,60/);
@@ -86,7 +86,7 @@ test('semana: com abastecimento aparecem gasto, litros, preço médio e consumo 
 test('mês com abastecimentos sem valor pago mostra o gasto estimado e o consumo aproximado', () => {
   const sem = (id, data, odometro, litros) => ({ id, data, odometro, litros, cheio: false });
   const html = montar({ abastecimentos: [sem('a', '2026-08-31', 1000, 3), sem('b', '2026-09-02', 1130, 5.6)] });
-  assert.match(html, /Valor abastecido/);
+  assert.match(html, /Pago na bomba/);
   assert.match(html, /Consumo médio \(aproximado\)/);
   assert.match(html, /23,2 km\/l/);
   assert.doesNotMatch(html, /Preço médio do litro/);
@@ -107,9 +107,10 @@ test('semana: "guardar" usa os custos fixos previstos da semana inteira e avisa 
   const html = htmlGuardarSemana(t, f);
   assert.match(html, /Custos fixos \(6 dias de trabalho\)/);
   assert.match(html, /R\$\s54,48/);
-  assert.match(html, /R\$\s373,24/); // 177,36 + 131,40 + 10 + 54,48
+  assert.match(html, /R\$\s185,88/); // 131,40 + 54,48: só moto e custos fixos
+  assert.match(html, /Combustível e despesas \(R\$\s187,36\) já saíram/);
   assert.match(html, /Faltam R\$\s15,24 de custos fixos\. Restam 1 dia de trabalho: R\$\s15,24 por dia/);
-  assert.match(htmlGuardarSemana(t, null), /R\$\s358,00/);
+  assert.match(htmlGuardarSemana(t, null), /R\$\s170,64/);
 });
 
 test('mês: "Seu dinheiro do mês" separa o que já foi usado do que fica guardado (moto e custos fixos)', () => {

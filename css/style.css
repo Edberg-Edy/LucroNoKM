@@ -868,3 +868,8 @@ input[type="date"] { min-width: 0; }
   .modo button { flex: 1 1 calc(33.333% - 6px); }
   .item-man .resumo { gap: 8px; }
 }
+
+/* Barra de uso de cada item da manutenção: cor pela situação, sempre junto de um texto */
+.medidor.amarelo i { background: var(--amarelo); }
+.medidor.vermelho i { background: var(--vermelho); }
+.medidor.verde i { background: var(--verde); }

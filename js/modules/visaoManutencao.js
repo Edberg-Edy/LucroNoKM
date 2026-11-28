@@ -1,5 +1,5 @@
 // HTML da visão "Manutenção" do histórico: situação de cada item, lançar uma troca e lista das trocas.
-import { dataBR, dinheiro, esc, hojeISO } from './formatos.js';
+import { dataBR, esc, hojeISO } from './formatos.js';
 
 const km = (n) => Math.round(n).toLocaleString('pt-BR') + ' km';
 
@@ -25,6 +25,7 @@ export function htmlManutencao({ itens, lista, sugestaoKm, apagandoId = null }) 
       return `
       <div class="item-man">
         <div class="resumo"><span>${esc(s.item)}</span><b class="selo ${t.classe}">${t.selo}</b></div>
+        <div class="medidor ${t.classe}" role="img" aria-label="${Math.round(s.usado)}% da duração usada"><i style="width:${s.nivel === 'sem-registro' ? 0 : Math.max(2, Math.round(s.usado))}%"></i></div>
         <p class="suave">${t.texto}</p>${real}
       </div>`;
     })
@@ -37,7 +38,7 @@ export function htmlManutencao({ itens, lista, sugestaoKm, apagandoId = null }) 
         .map(
           (m) => `
       <div class="item">
-        <span>${dataBR(m.data).slice(0, 5)} · ${esc(m.item)} · ${km(m.odometro)}${m.valor > 0 ? ' · ' + dinheiro(m.valor) : ''}</span>
+        <span>${dataBR(m.data).slice(0, 5)} · ${esc(m.item)} · ${km(m.odometro)}</span>
         <button type="button" class="x" data-man-excluir="${esc(m.id)}" aria-label="Excluir troca">${apagandoId === m.id ? 'Excluir?' : '✕'}</button>
       </div>`
         )
@@ -53,10 +54,10 @@ export function htmlManutencao({ itens, lista, sugestaoKm, apagandoId = null }) 
 
     <section class="cartao compacto">
       <h2>Lançar uma troca</h2>
+      <p class="suave">Lance também a última troca que você já fez, com o odômetro da época, para o app começar a contar.</p>
       <label>Item<select id="manItem">${opcoes}</select></label>
       <label>Data<input type="date" id="manData" value="${hojeISO()}"></label>
       <label>Odômetro na troca (km)<input type="text" inputmode="numeric" id="manKm" value="${sugestaoKm ?? ''}"></label>
-      <label>Valor pago (R$, 0 se já tinha trocado antes)<input type="text" inputmode="decimal" id="manValor" placeholder="0"></label>
       <button type="button" class="botao" data-acao="lancarManutencao">Lançar troca</button>
       <p class="suave" id="manAviso" role="status"></p>
     </section>
