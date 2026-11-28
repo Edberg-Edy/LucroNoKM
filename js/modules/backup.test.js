@@ -60,7 +60,7 @@ const recusa = (altera, mensagem) => {
 test('backup válido é aceito e resumido', () => {
   const r = validarBackup(backupOk());
   assert.equal(r.ok, true);
-  assert.deepEqual(r.resumo, { dias: 2, abertos: 1, meses: 1, abastecimentos: 2, de: '2026-10-01', ate: '2026-10-02' });
+  assert.deepEqual(r.resumo, { dias: 2, abertos: 1, meses: 1, abastecimentos: 2, manutencoes: 0, de: '2026-10-01', ate: '2026-10-02' });
 });
 
 test('backup baixado antes, com o nome antigo do app, continua válido', () => {
@@ -187,4 +187,16 @@ test('backup com valores fora dos limites das regras e dos Ajustes é recusado',
   recusa((b) => { b.abastecimentos[0].odometro = 10000000; }, 'odômetro fora do normal');
   recusa((b) => { b.meses['2026-09'].observacao = 'x'.repeat(2001); }, 'observação grande demais');
   recusa((b) => { b.meses['2026-09'].totais = 'texto'; }, 'totais que não é objeto');
+});
+
+test('backup traz as trocas de manutenção e recusa troca inválida', () => {
+  const troca = { id: 'm1', item: 'Óleo e filtro', data: '2026-11-01', odometro: 4851 };
+  const b = montarBackup({}, [], new Date(), {}, [], [troca]);
+  assert.deepEqual(b.manutencoes, [troca]);
+  assert.deepEqual(montarBackup({}, []).manutencoes, []);
+  assert.deepEqual(prepararRestauracao({ ...b, dias: [], config: {} }).manutencoes, [{ id: 'm1', campos: { item: 'Óleo e filtro', data: '2026-11-01', odometro: 4851 } }]);
+  assert.equal(validarBackup({ ...backupOk(), manutencoes: [troca] }).ok, true);
+  recusa((x) => (x.manutencoes = [{ ...troca, odometro: -5 }]), 'odômetro negativo');
+  recusa((x) => (x.manutencoes = [{ ...troca, item: '' }]), 'item vazio');
+  recusa((x) => (x.manutencoes = 'x'), 'não é lista');
 });

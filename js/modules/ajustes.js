@@ -3,6 +3,7 @@
 import { carregarConfig, salvarConfig } from '../services/dados.js';
 import { listarTodosDias, listarDiasFechados, atualizarDiasEmLote, restaurarDias } from '../services/dias.js';
 import { listarAbastecimentos, restaurarAbastecimentos } from '../services/abastecimentos.js';
+import { listarManutencoes, restaurarManutencoes } from '../services/manutencoes.js';
 import { listarMeses, salvarMes } from '../services/meses.js';
 import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcularDiaFechado } from './calculos.js';
 import { mesDe } from './mes.js';
@@ -348,13 +349,14 @@ export async function telaAjustes(caixa, usuario) {
     const aviso = caixa.querySelector('#statusBackup');
     aviso.textContent = 'Gerando backup…';
     try {
-      const [dias, meses, abastecimentos] = await Promise.all([
+      const [dias, meses, abastecimentos, manutencoes] = await Promise.all([
         listarTodosDias(usuario.uid),
         listarMeses(usuario.uid, { completo: true }),
         listarAbastecimentos(usuario.uid, { completo: true }),
+        listarManutencoes(usuario.uid, { completo: true }),
       ]);
-      baixarBackup(montarBackup(config, dias, new Date(), meses, abastecimentos));
-      aviso.textContent = `Backup baixado (${dias.length} dias, ${Object.keys(meses).length} meses e ${abastecimentos.length} abastecimentos).`;
+      baixarBackup(montarBackup(config, dias, new Date(), meses, abastecimentos, manutencoes));
+      aviso.textContent = `Backup baixado (${dias.length} dias, ${Object.keys(meses).length} meses, ${abastecimentos.length} abastecimentos e ${manutencoes.length} trocas).`;
     } catch (e) {
       aviso.textContent =
         e.code === 'sem-servidor'
@@ -480,6 +482,7 @@ export async function telaAjustes(caixa, usuario) {
       const gravacoes = [await restaurarDias(usuario.uid, preparado.dias)];
       for (const m of preparado.meses) gravacoes.push(await salvarMes(usuario.uid, m.ym, m.campos));
       gravacoes.push(await restaurarAbastecimentos(usuario.uid, preparado.abastecimentos));
+      gravacoes.push(await restaurarManutencoes(usuario.uid, preparado.manutencoes));
       Object.assign(config, padroes(), preparado.config); // valores novos que o backup não tinha ficam com o padrão
       gravacoes.push(await salvarConfig(usuario.uid, config));
 
@@ -488,7 +491,7 @@ export async function telaAjustes(caixa, usuario) {
       carregarConsumo(); // os abastecimentos restaurados mudam o consumo medido
       const novo = caixa.querySelector('#statusRestaurar');
       novo.textContent =
-        `Pronto: ${preparado.dias.length} dias, ${preparado.meses.length} meses e ${preparado.abastecimentos.length} abastecimentos restaurados.` +
+        `Pronto: ${preparado.dias.length} dias, ${preparado.meses.length} meses, ${preparado.abastecimentos.length} abastecimentos e ${preparado.manutencoes.length} trocas restaurados.` +
         (tudo ? '' : ' Sem sinal agora: vai sincronizar quando a internet voltar.');
     } catch (e) {
       aviso.textContent = 'Não foi possível restaurar. Confira a internet e tente de novo.';

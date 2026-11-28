@@ -26,7 +26,7 @@ const idValido = (id) => texto(id) && id !== '' && id.length <= 200 && !id.inclu
 
 // Monta o conteúdo do backup. Os dias saem em ordem de data. "meses" são os fechamentos e checklists (opcional).
 // "abastecimentos" é a lista de abastecimentos de combustível (opcional; backups antigos não têm).
-export function montarBackup(config, dias, agora = new Date(), meses = {}, abastecimentos = []) {
+export function montarBackup(config, dias, agora = new Date(), meses = {}, abastecimentos = [], manutencoes = []) {
   return {
     app: NOME_APP,
     versao: 1,
@@ -35,6 +35,7 @@ export function montarBackup(config, dias, agora = new Date(), meses = {}, abast
     dias: [...dias].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)),
     meses,
     abastecimentos: [...abastecimentos].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)),
+    manutencoes: [...manutencoes].sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0)),
   };
 }
 
@@ -126,6 +127,15 @@ function erroNoAbastecimento(a) {
   return null;
 }
 
+function erroNaManutencao(m) {
+  if (!objeto(m) || !idValido(m.id)) return 'Há uma troca de manutenção sem identificação válida no backup.';
+  if (!texto(m.data) || !DATA.test(m.data)) return `Troca de manutenção com data inválida no backup (${m.id}).`;
+  if (!texto(m.item) || m.item.trim() === '' || m.item.length > 60) return `Troca de ${m.data} com item inválido.`;
+  if (!numero(m.odometro) || m.odometro <= 0 || m.odometro >= 10000000) return `Troca de ${m.data} com odômetro inválido.`;
+  if (m.valor !== undefined && m.valor !== null && (!numero(m.valor) || m.valor < 0 || m.valor > 100000)) return `Troca de ${m.data} com valor inválido.`;
+  return null;
+}
+
 // Confere se o arquivo escolhido é mesmo um backup do LucroNoKM e se está inteiro.
 // Devolve { ok: true, resumo } ou { ok: false, erro } com uma frase pronta para mostrar na tela.
 export function validarBackup(b) {
@@ -150,6 +160,14 @@ export function validarBackup(b) {
     }
   }
 
+  if (b.manutencoes !== undefined) {
+    if (!Array.isArray(b.manutencoes)) return falha('A lista de trocas de manutenção do backup está inválida.');
+    for (const m of b.manutencoes) {
+      const erroTroca = erroNaManutencao(m);
+      if (erroTroca) return falha(erroTroca);
+    }
+  }
+
   const meses = b.meses ?? {};
   const mesOk = (ym, m) =>
     MES.test(ym) &&
@@ -170,6 +188,7 @@ export function validarBackup(b) {
       abertos: b.dias.length - datas.length,
       meses: Object.keys(meses).length,
       abastecimentos: (b.abastecimentos ?? []).length,
+      manutencoes: (b.manutencoes ?? []).length,
       de: datas[0] || null,
       ate: datas[datas.length - 1] || null,
     },
@@ -187,5 +206,6 @@ export function prepararRestauracao(b) {
     dias: b.dias.filter((d) => d.aberto !== true).map((d) => ({ id: d.id, campos: limpar(d) })),
     meses: Object.entries(b.meses ?? {}).map(([ym, campos]) => ({ ym, campos: limpar(campos) })),
     abastecimentos: (b.abastecimentos ?? []).map((a) => ({ id: a.id, campos: limpar(a) })),
+    manutencoes: (b.manutencoes ?? []).map((m) => ({ id: m.id, campos: limpar(m) })),
   };
 }
