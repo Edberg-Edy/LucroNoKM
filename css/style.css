@@ -845,3 +845,26 @@ a {
 /* Manutenção: um bloco por item */
 .item-man { padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .item-man p { margin: 4px 0 0; }
+
+/* Listas de escolha com o mesmo visual dos campos (Manutenção e tipo de empresa) */
+select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  padding: 0 12px;
+  border: 1.5px solid var(--borda);
+  border-radius: 10px;
+  background: var(--fundo);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 700;
+}
+input[type="date"] { min-width: 0; }
+
+/* Celular: cinco botões de período não cabem em uma linha, então quebram em 3 + 2 */
+@media (max-width: 520px) {
+  .modo { flex-wrap: wrap; }
+  .modo button { flex: 1 1 calc(33.333% - 6px); }
+  .item-man .resumo { gap: 8px; }
+}
