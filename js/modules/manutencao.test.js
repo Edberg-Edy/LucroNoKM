@@ -22,11 +22,13 @@ test('próxima troca = última + duração; avisa com 10% e vence no km', () => 
   assert.equal(s(5620).faltam, -120);
 });
 
-test('usa a troca mais recente e estima os dias de trabalho', () => {
-  const lista = [{ item: 'Óleo', odometro: 3000 }, { item: 'Óleo', odometro: 4500 }];
-  const o = situacaoDosItens({ itens, lista, kmAtual: 5000, mediaKmDia: 150 })[0];
+test('usa a troca mais recente e conta km e dias desde ela', () => {
+  const lista = [{ item: 'Óleo', odometro: 3000, data: '2026-10-01' }, { item: 'Óleo', odometro: 4500, data: '2026-11-10' }];
+  const o = situacaoDosItens({ itens, lista, kmAtual: 5000, hoje: '2026-11-20' })[0];
   assert.equal(o.ultimoKm, 4500);
-  assert.equal(o.dias, 4); // 500 km ÷ 150
+  assert.equal(o.rodou, 500);
+  assert.equal(o.diasDesde, 10);
+  assert.deepEqual(o.anterior, { km: 1500, dias: 40 }); // a troca anterior durou 1.500 km e 40 dias
 });
 
 test('intervalo real só com duas trocas ou mais', () => {

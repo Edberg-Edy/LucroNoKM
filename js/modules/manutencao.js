@@ -33,20 +33,31 @@ export function intervaloReal(lista, item) {
   return (kms[kms.length - 1] - kms[0]) / (kms.length - 1);
 }
 
+// Dias entre duas datas 'aaaa-mm-dd'.
+export function diasEntre(de, ate) {
+  return Math.max(0, Math.round((new Date(ate + 'T12:00:00') - new Date(de + 'T12:00:00')) / 86400000));
+}
+
 // Situação de cada item dos Ajustes.
 //   nivel: 'sem-registro' | 'ok' | 'chegando' (faltam 10% ou menos) | 'vencido'
-export function situacaoDosItens({ itens, lista, kmAtual, mediaKmDia = null }) {
+export function situacaoDosItens({ itens, lista, kmAtual, hoje = null }) {
   return itens.map((it) => {
     const trocas = lista.filter((m) => m.item === it.item && Number.isFinite(m.odometro));
     const base = { item: it.item, duracaoKm: it.duracaoKm, real: intervaloReal(lista, it.item) };
-    if (!trocas.length || !(it.duracaoKm > 0)) return { ...base, nivel: 'sem-registro', ultimoKm: null, proximoKm: null, faltam: null, dias: null, usado: 0 };
-    const ultimoKm = Math.max(...trocas.map((m) => m.odometro));
+    if (!trocas.length || !(it.duracaoKm > 0)) return { ...base, nivel: 'sem-registro', ultimoKm: null, proximoKm: null, faltam: null, usado: 0, rodou: null, diasDesde: null, anterior: null };
+    const ordenadas = [...trocas].sort((a, b) => a.odometro - b.odometro);
+    const ultima = ordenadas[ordenadas.length - 1];
+    const penultima = ordenadas[ordenadas.length - 2];
+    const ultimoKm = ultima.odometro;
     const proximoKm = ultimoKm + it.duracaoKm;
     const faltam = kmAtual === null ? null : proximoKm - kmAtual;
     let nivel = 'ok';
     if (faltam !== null) nivel = faltam <= 0 ? 'vencido' : faltam <= it.duracaoKm * AVISO ? 'chegando' : 'ok';
-    const dias = faltam !== null && faltam > 0 && mediaKmDia > 0 ? Math.ceil(faltam / mediaKmDia) : null;
     const usado = faltam === null ? 0 : Math.min(100, Math.max(0, ((it.duracaoKm - faltam) / it.duracaoKm) * 100));
-    return { ...base, nivel, ultimoKm, proximoKm, faltam, dias, usado };
+    const rodou = kmAtual === null ? null : Math.max(0, kmAtual - ultimoKm);
+    const diasDesde = hoje && ultima.data ? diasEntre(ultima.data, hoje) : null;
+    // quanto a troca anterior durou (km e dias), para comparar com a atual
+    const anterior = penultima ? { km: ultimoKm - penultima.odometro, dias: ultima.data && penultima.data ? diasEntre(penultima.data, ultima.data) : null } : null;
+    return { ...base, nivel, ultimoKm, proximoKm, faltam, usado, rodou, diasDesde, anterior };
   });
 }

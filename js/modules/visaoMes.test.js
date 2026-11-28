@@ -108,7 +108,6 @@ test('semana: "guardar" usa os custos fixos previstos da semana inteira e avisa 
   assert.match(html, /Custos fixos \(6 dias de trabalho\)/);
   assert.match(html, /R\$\s54,48/);
   assert.match(html, /R\$\s185,88/); // 131,40 + 54,48: só moto e custos fixos
-  assert.match(html, /Combustível e despesas \(R\$\s187,36\) já saíram/);
   assert.match(html, /Faltam R\$\s15,24 de custos fixos\. Restam 1 dia de trabalho: R\$\s15,24 por dia/);
   assert.match(htmlGuardarSemana(t, null), /R\$\s170,64/);
 });

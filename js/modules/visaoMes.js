@@ -96,7 +96,6 @@ export function htmlGuardarSemana(t, f) {
         ${linha('Manutenção da moto', dinheiro(t.manutencao))}
         ${linha(f ? `Custos fixos (${pl(f.dias)} de trabalho)` : 'Custos fixos', dinheiro(fixos))}
         ${linha('Separar na semana', dinheiro(total), 'total')}
-        <p class="suave" style="margin-top:8px">Combustível e despesas (${dinheiro(t.combustivel + t.despesas)}) já saíram do seu bolso.</p>
         ${nota ? `<p class="suave" style="margin-top:8px">${nota}</p>` : ''}
       </section>`;
 }
@@ -142,15 +141,6 @@ function htmlCombustivel(c) {
         <div><span>Consumo médio${c.kmPorLitro === null ? ' (aproximado)' : ''}</span><b>${consumo === null ? '—' : kmL(consumo) + ' km/l'}</b></div>
         <div><span>Custo por km</span><b>${c.custoPorKm === null ? '—' : dinheiro3(c.custoPorKm)}</b></div>
       </div>
-      ${
-        c.diferenca !== null && Math.abs(c.diferenca) >= 0.005
-          ? `<p class="suave">${
-              c.diferenca > 0
-                ? `Você pagou ${dinheiro(c.diferenca)} a mais na bomba do que as contas usaram: é combustível que ficou no tanque.`
-                : `Você pagou ${dinheiro(-c.diferenca)} a menos na bomba do que as contas usaram: parte veio do tanque do mês anterior.`
-            }</p>`
-          : ''
-      }
       <details class="como">
         <summary>Como é calculado?</summary>
         <p class="suave">"Pago na bomba" soma os litros abastecidos no mês × o preço do litro dos Ajustes (ou o valor pago, se você informou). "Usado nas contas" é o combustível que os dias fechados calcularam (km ÷ km/l × preço do litro). O consumo medido só aparece com dois abastecimentos em que você marcou "Completei o tanque"; o aproximado usa todos (km rodados ÷ litros) e fica mais certo a cada mês.</p>

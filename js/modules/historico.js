@@ -3,7 +3,7 @@ import { listarDiasFechadosDoAno, buscarDiaAberto, reabrirDia, excluirDia } from
 import { carregarConfig } from '../services/dados.js';
 import { listarAbastecimentos, excluirAbastecimento } from '../services/abastecimentos.js';
 import { listarManutencoes, novaManutencao, excluirManutencao } from '../services/manutencoes.js';
-import { kmAtualDe, mediaKmPorDia, situacaoDosItens } from './manutencao.js';
+import { kmAtualDe, situacaoDosItens } from './manutencao.js';
 import { htmlManutencao } from './visaoManutencao.js';
 import { listarMeses, salvarMes, fecharMes, reabrirMes } from '../services/meses.js';
 import { faturadoNoAno, alertaMei, nomeDoLimite } from './mei.js';
@@ -166,7 +166,7 @@ export async function telaHistorico(caixa, usuario) {
       itens: config.manutencao || [],
       lista: manutencoes,
       kmAtual: kmAtualDe({ dias, diaAberto, abastecimentos, manutencoes }),
-      mediaKmDia: mediaKmPorDia(dias, hojeISO()),
+      hoje: hojeISO(),
     });
     const alertasMan = situacaoMan.filter((s) => s.nivel === 'chegando' || s.nivel === 'vencido');
     const avisoManutencao = alertasMan.length

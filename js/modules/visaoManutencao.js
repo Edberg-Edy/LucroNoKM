@@ -8,8 +8,7 @@ function textoDoItem(s) {
   const base = `Última: ${km(s.ultimoKm)} · próxima: ${km(s.proximoKm)}`;
   if (s.faltam === null) return { selo: 'Em dia', classe: 'verde', texto: base };
   if (s.nivel === 'vencido') return { selo: 'Vencido', classe: 'vermelho', texto: `${base} · passou ${km(-s.faltam)}` };
-  const dias = s.dias ? ` (~${s.dias} ${s.dias === 1 ? 'dia' : 'dias'} de trabalho)` : '';
-  return { selo: s.nivel === 'chegando' ? 'Chegando' : 'Em dia', classe: s.nivel === 'chegando' ? 'amarelo' : 'verde', texto: `${base} · faltam ${km(s.faltam)}${dias}` };
+  return { selo: s.nivel === 'chegando' ? 'Chegando' : 'Em dia', classe: s.nivel === 'chegando' ? 'amarelo' : 'verde', texto: `${base} · faltam ${km(s.faltam)}` };
 }
 
 // itens = resultado de situacaoDosItens; lista = trocas lançadas (qualquer ordem); sugestaoKm = odômetro atual (preenche o campo)
@@ -17,6 +16,13 @@ export function htmlManutencao({ itens, lista, sugestaoKm, apagandoId = null }) 
   const cartaoItens = itens
     .map((s) => {
       const t = textoDoItem(s);
+      const pl = (n) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
+      const desde =
+        s.rodou !== null && s.diasDesde !== null
+          ? `<p class="suave">Desde a última troca: ${km(s.rodou)} rodados em ${pl(s.diasDesde)}.${
+              s.anterior ? ` A troca anterior durou ${km(s.anterior.km)}${s.anterior.dias !== null ? ' e ' + pl(s.anterior.dias) : ''}.` : ''
+            }</p>`
+          : '';
       const real = s.real
         ? `<p class="suave">Pelas suas trocas: a cada ${km(s.real)} (Ajuste: ${km(s.duracaoKm)}). ${
             Math.abs(s.real - s.duracaoKm) > s.duracaoKm * 0.1 ? 'Vale acertar a duração nos Ajustes.' : ''
@@ -26,7 +32,7 @@ export function htmlManutencao({ itens, lista, sugestaoKm, apagandoId = null }) 
       <div class="item-man">
         <div class="resumo"><span>${esc(s.item)}</span><b class="selo ${t.classe}">${t.selo}</b></div>
         <div class="medidor ${t.classe}" role="img" aria-label="${Math.round(s.usado)}% da duração usada"><i style="width:${s.nivel === 'sem-registro' ? 0 : Math.max(2, Math.round(s.usado))}%"></i></div>
-        <p class="suave">${t.texto}</p>${real}
+        <p class="suave">${t.texto}</p>${desde}${real}
       </div>`;
     })
     .join('');
