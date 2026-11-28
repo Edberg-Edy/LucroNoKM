@@ -59,6 +59,8 @@ Atualizado a cada etapa fechada. Contexto completo em [README.md](README.md) e [
 | 54 | Contas no modelo Faturou → Já saiu → Separar → Livre (dia e semana: combustível e despesas fora de "separar"); combustível do mês com Pago na bomba / Usado nas contas; Manutenção com barra de uso e sem valores | ✅ v0.54 |
 | 55 | Manutenção mostra km e dias desde a última troca (e quanto durou a anterior); semana e combustível do mês sem frases extras | ✅ v0.55 |
 | 56 | Backup e restauração incluem as trocas de manutenção | ✅ v0.56 |
+| 57 | Assistente do primeiro uso em 7 passos (moto, meta, custos fixos, manutenção, plataformas, empresa e exemplo do dia com os números da pessoa) | ✅ v0.57 |
+| 58 | Ajustes: botão para ver o passo a passo inicial de novo | ✅ v0.58 |
 | 28 | Acessibilidade (axe no teste de navegador, zero problemas em todas as telas, foco ao trocar de aba), boas-vindas no primeiro acesso, política de privacidade e "Apagar todos os meus dados" | ✅ v0.28 |
 | 27 | Histórico carrega por ano (escala para anos de uso); regras do Firestore validam tipos e só liberam as 4 coleções do app, com teste no emulador (CI) | ✅ v0.27 |
 | 26 | Robustez: teste de navegador (Playwright com Firebase de mentira), lint, guarda da versão do cache, diagnóstico de erros em Ajustes e lembrete de backup a cada 30 dias | ✅ v0.26 |

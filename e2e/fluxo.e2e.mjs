@@ -74,6 +74,15 @@ test('abrir o dia, lançar despesa, abastecer e fechar mostra os três cartões'
   // primeiro acesso: cartão de boas-vindas
   await pagina.waitForSelector('text=Bem-vindo ao LucroNoKM');
   await semViolacoes('Hoje (primeiro acesso)');
+  // assistente: passa pelos 7 passos com os valores sugeridos e termina no exemplo do dia
+  await pagina.click('[data-acao="proximo"]'); // começar
+  for (let passo = 1; passo <= 6; passo++) {
+    await pagina.waitForSelector(`text=Passo ${passo} de 7`);
+    if (passo === 1) await semViolacoes('Assistente (passo 1)');
+    await pagina.click('[data-acao="proximo"]');
+  }
+  await pagina.waitForSelector('text=Tudo pronto!');
+  assert.ok((await pagina.innerText('#conteudo')).includes('Livre para gastar'));
   await pagina.click('[data-acao="dispensarBoasVindas"]');
   assert.equal(await pagina.locator('text=Bem-vindo ao LucroNoKM').count(), 0);
   await pagina.fill('#odometro', '1000');
@@ -315,4 +324,13 @@ test('aba Manutenção: lança uma troca, mostra a próxima e avisa quando está
   assert.ok(texto.includes('próxima: 3.200 km'));
   assert.equal(texto.includes('R$ 40,00'), false); // trocas não mostram dinheiro
   assert.equal(await pagina.locator('.medidor').count() > 0, true);
+});
+
+test('Ajustes: "Ver o passo a passo de novo" reabre o assistente, mesmo com dias lançados', async () => {
+  await pagina.evaluate(() => { location.hash = 'ajustes'; });
+  await pagina.waitForSelector('[data-acao="verAssistente"]');
+  await pagina.click('[data-acao="verAssistente"]');
+  await pagina.waitForSelector('text=Bem-vindo ao LucroNoKM');
+  await pagina.click('[data-acao="dispensarBoasVindas"]'); // pular
+  assert.equal(await pagina.locator('text=Bem-vindo ao LucroNoKM').count(), 0);
 });

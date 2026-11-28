@@ -9,6 +9,7 @@ import { manutencaoPorKm, combustivelPorKm, fixoPorDia, parametrosDoDia, recalcu
 import { mesDe } from './mes.js';
 import { apagarTodosOsDados } from '../services/conta.js';
 import { lerErros, limparErros, textoDiagnostico } from './erros.js';
+import { pedirAssistente } from './boasvindas.js';
 import { montarBackup, baixarBackup, validarBackup, prepararRestauracao } from './backup.js';
 import { trechos, consumoMedio, consumoAproximado, kmL } from './combustivel.js';
 import { validarCampoAjuste } from './validacao.js';
@@ -253,6 +254,12 @@ export async function telaAjustes(caixa, usuario) {
           )
           .join('')}
         <button type="button" class="botao secundario" data-acao="adicionar:plataformas">+ Plataforma</button>
+      </section>
+
+      <section class="cartao">
+        <h2>Passo a passo inicial</h2>
+        <p class="suave">Esqueceu como o app funciona? Veja de novo o passo a passo de configuração. Os valores atuais já aparecem preenchidos.</p>
+        <button type="button" class="botao secundario" data-acao="verAssistente">Ver o passo a passo de novo</button>
       </section>
 
       <section class="cartao">
@@ -569,6 +576,11 @@ export async function telaAjustes(caixa, usuario) {
     if (botao.dataset.acao === 'confirmarApagar') return apagarDados();
     if (botao.dataset.acao === 'copiarDiagnostico') return copiarDiagnostico();
     if (botao.dataset.acao === 'limparDiagnostico') return limparDiagnostico();
+    if (botao.dataset.acao === 'verAssistente') {
+      pedirAssistente();
+      location.hash = 'hoje';
+      return;
+    }
     if (botao.dataset.acao === 'backup') {
       fazerBackup();
       return;

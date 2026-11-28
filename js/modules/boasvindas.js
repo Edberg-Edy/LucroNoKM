@@ -20,6 +20,33 @@ export function dispensarBoasVindas() {
   }
 }
 
+// Pedido de rever o assistente (botão nos Ajustes): vale só até a pessoa terminar ou pular.
+const CHAVE_PEDIDO = 'lucronokm.reverAssistente';
+
+export function pedirAssistente() {
+  try {
+    sessionStorage.setItem(CHAVE_PEDIDO, '1');
+  } catch (e) {
+    // sem sessionStorage: o botão simplesmente não abre o assistente
+  }
+}
+
+export function assistentePedido() {
+  try {
+    return sessionStorage.getItem(CHAVE_PEDIDO) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+export function limparPedidoAssistente() {
+  try {
+    sessionStorage.removeItem(CHAVE_PEDIDO);
+  } catch (e) {
+    // nada a limpar
+  }
+}
+
 export function htmlBoasVindas() {
   return `
     <section class="cartao estreito" aria-labelledby="tituloBoasVindas">

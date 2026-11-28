@@ -11,7 +11,8 @@ import { telaAbastecer } from './abastecer.js';
 import { odometroSugerido, conferirOdometroInicial } from './sugestoes.js';
 import { lembreteDAS, lembreteBackup } from './lembretes.js';
 import { ultimoBackup } from './backup.js';
-import { mostrarBoasVindas, boasVindasDispensado, dispensarBoasVindas, htmlBoasVindas } from './boasvindas.js';
+import { mostrarBoasVindas, boasVindasDispensado, dispensarBoasVindas, assistentePedido, limparPedidoAssistente } from './boasvindas.js';
+import { telaAssistente } from './assistente.js';
 import { hojeISO, dataBR, lerNumero, dinheiro, esc } from './formatos.js';
 
 let categorias = ['Comida', 'Manutenção', 'Estacionamento', 'Multa', 'Outros']; // troca pelos nomes dos Ajustes ao carregar
@@ -137,7 +138,8 @@ export async function telaHoje(raiz, usuario) {
   };
 
   function desenhar() {
-    if (resultado) desenharResultado();
+    if (assistentePedido() && !resultado) telaAssistente(caixa, { config, uid: usuario.uid }); // pedido nos Ajustes: revê o passo a passo
+    else if (resultado) desenharResultado();
     else if (dia) desenharDiaAberto();
     else desenharAbrir();
     posicionarAbastecer();
@@ -146,8 +148,11 @@ export async function telaHoje(raiz, usuario) {
   function desenharAbrir() {
     const sugerido = odometroSugerido({ dias: recentes, abastecimentos }); // o maior odômetro conhecido (último dia ou abastecimento)
     const boasVindas = mostrarBoasVindas({ temDias: primeiro !== null, diaAberto: false, dispensado: boasVindasDispensado() });
+    if (boasVindas) {
+      telaAssistente(caixa, { config, uid: usuario.uid });
+      return;
+    }
     caixa.innerHTML = `
-      ${boasVindas ? htmlBoasVindas() : ''}
       <div class="painel dia-aberto">
       <div class="col a">
       <section class="cartao estreito">
@@ -522,6 +527,7 @@ export async function telaHoje(raiz, usuario) {
       dispensarBoasVindas();
       location.hash = 'ajustes';
     } else if (botao.dataset.acao === 'dispensarBoasVindas') {
+      limparPedidoAssistente();
       dispensarBoasVindas();
       desenhar();
     } else if (botao.dataset.acao === 'abrir') abrir();
